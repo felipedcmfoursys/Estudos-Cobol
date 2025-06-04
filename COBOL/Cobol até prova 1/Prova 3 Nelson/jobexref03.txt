@@ -1,0 +1,17 @@
+//FSYS008E JOB 'FSYS008',MSGCLASS=X,CLASS=C,NOTIFY=&SYSUID,TIME=(0,10)
+//JOBLIB   DD  DISP=SHR,DSN=FS.GERAL.LOADLIB
+//*---------------------------------------------------------------------
+//*---------------------------------------------------------------------
+//*******************************************************************
+//* EXECUTA PROGRAMA PARA SEPARAR ARQUIVOS 2024 E 2025
+//*******************************************************************
+//STEP001  EXEC PGM=REF008P3
+//CLIENTES DD  DSN=FS.FSYS008.CLIENTES,DISP=SHR
+//DEVEDOR  DD  DSN=FS.FSYS008.DEVEDOR,DISP=(NEW,CATLG,DELETE),
+//             SPACE=(TRK,(1,1),RLSE),
+//             UNIT=SYSALLDA,
+//             DCB=(LRECL=46,RECFM=FB,DSORG=PS)
+//ATIVO    DD  DSN=FS.FSYS008.ATIVO,DISP=(NEW,CATLG,DELETE),
+//             SPACE=(TRK,(1,1),RLSE),
+//             UNIT=SYSALLDA,
+//             DCB=(LRECL=46,RECFM=FB,DSORG=PS)

@@ -1,0 +1,197 @@
+      *--------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *--------------------------------------------------------------*
+       PROGRAM-ID.                         P103NX05.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT EXTTDV25 ASSIGN TO UT-S-EXTTDV25
+           FILE STATUS IS FS-EXTTDV25
+           .
+           SELECT EMPR2025 ASSIGN TO UT-S-EMPR2025
+           FILE STATUS IS FS-EMPR2025
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  EXTTDV25
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTDV25
+           .
+       01  FD-EXTTDV25                     PIC X(44).
+
+       FD  EMPR2025
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 66 CHARACTERS
+           DATA RECORD IS FD-EMPR2025
+           .
+       01  FD-EMPR2025                     PIC X(66).
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+      * VARIAVEIS ESPELHO DOS REGISTROS                              *
+      *--------------------------------------------------------------*
+           COPY B103DV25.
+      *    COPY B103CR25.
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-EXTTDV25                     PIC X(02).
+           88 SUCESSO-DV25                         VALUE '00'.
+           88 FIM-ARQ-DV25                         VALUE '10'.
+
+       01  FS-EMPR2025                     PIC X(02).
+           88 SUCESSO-EP25                         VALUE '00'.
+           88 FIM-ARQ-EP25                         VALUE '10'.
+
+      *
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*
+       77  WS-ACORDO-AVISTA                PIC 9(06)V99 COMP.
+       77  WS-AUX                          PIC 9(06)V99 COMP.
+       77  WS-ACORDO-PARC                  PIC 9(06)V99 COMP.
+       77  WS-VALOR-PARC                   PIC 9(06)V99 COMP.
+       77  WS-JUROS-PARC                   PIC 9(06)V99 COMP.
+       77  WS-PARC-TOTAL                   PIC 9(06)V99 COMP.
+       77  WS-PARC-FINAL                   PIC 9(06)V99 COMP.
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+       0000-MAIN.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+                   UNTIL FIM-ARQ-DV25
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           OPEN INPUT EXTTDV25
+
+           IF NOT SUCESSO-DV25
+              DISPLAY 'ERRO ABERTURA EXTTDV25'
+           END-IF
+
+           OPEN OUTPUT EMPR2025
+
+           IF NOT SUCESSO-EP25
+              DISPLAY 'ERRO ABERTURA EMPR2025'
+           END-IF
+
+           PERFORM 1500-LER-EXTTDV25
+           .
+
+       1500-LER-EXTTDV25.
+           READ EXTTDV25 INTO REG-B103DV25
+
+           IF NOT SUCESSO-DV25
+               DISPLAY 'ERRO LEITURA EXTTDV25'
+           ELSE
+              IF NOT FIM-ARQ-DV25
+                 DISPLAY 'ERRO FIM DE ARQUIVO EXTTDV25'
+              END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           IF B103DV25-SALDO > -5000
+               COMPUTE WS-AUX = B103DV25-SALDO * 0,20
+               COMPUTE WS-ACORDO-AVISTA = B103DV25-SALDO - WS-AUX
+               COMPUTE WS-ACORDO-PARC = B103DV25-SALDO + WS-AUX
+               COMPUTE WS-VALOR-PARC = WS-ACORDO-PARC / 12
+               COMPUTE WS-JUROS-PARC = (WS-AUX / 12)
+               COMPUTE WS-PARC-TOTAL = WS-VALOR-PARC + WS-JUROS-PARC
+               COMPUTE WS-PARC-FINAL = 
+                                   (B103DV25-SALDO + WS-PARC-TOTAL) / 12
+
+           END-IF
+            
+           IF B103DV25-SALDO BETWEEN -5000 AND -30000
+               COMPUTE WS-AUX = B103DV25-SALDO * 0,40
+               COMPUTE WS-ACORDO-AVISTA = B103DV25-SALDO - WS-AUX
+               COMPUTE WS-ACORDO-PARC = B103DV25-SALDO + WS-AUX
+               COMPUTE WS-VALOR-PARC = WS-ACORDO-PARC / 36
+               COMPUTE WS-JUROS-PARC = (WS-AUX / 36)
+               COMPUTE WS-PARC-TOTAL = WS-VALOR-PARC + WS-JUROS-PARC
+               COMPUTE WS-PARC-FINAL = 
+                                   (B103DV25-SALDO + WS-PARC-TOTAL) / 36
+           END-IF
+           
+           IF B103DV25-SALDO < -30000
+               COMPUTE WS-AUX = B103DV25-SALDO * 0,50
+               COMPUTE WS-ACORDO-AVISTA = B103DV25-SALDO - WS-AUX
+               COMPUTE WS-ACORDO-PARC = B103DV25-SALDO + WS-AUX
+               COMPUTE WS-VALOR-PARC = WS-ACORDO-PARC / 72
+               COMPUTE WS-JUROS-PARC = (WS-AUX / 72)
+               COMPUTE WS-PARC-TOTAL = WS-VALOR-PARC + WS-JUROS-PARC
+               COMPUTE WS-PARC-FINAL = 
+                                   (B103DV25-SALDO + WS-PARC-TOTAL) / 72
+           END-IF
+           MOVE B103DV25-CPF                 TO B103EP25-CPF
+           MOVE B103DV25-NOME                TO B103EP25-NOME
+           MOVE B103DV25-DATA                TO B103EP25-DATA
+           MOVE B103DV25-SALDO               TO B103EP25-SALDO
+           MOVE WS-ACORDO-AVISTA             TO B103EP25-ACRD-AVISTA
+           MOVE WS-VALOR-PARC                TO B103EP25-VALOR-PARC
+           MOVE WS-JUROS-PARC                TO B103EP25-JUROS-PARC
+           MOVE WS-PARC-FINAL                TO B103EP25-TOTAL-PARC
+           
+           PERFORM 2500-GRAVAR-EMPR2025
+           PERFORM 1500-LER-EXTTDV25
+           .
+
+       2500-GRAVAR-EMPR2025.
+           MOVE REG-B103EP25                 TO FD-EMPR2025
+           WRITE FD-EMPR2025
+           IF NOT SUCESSO-EP25
+              DISPLAY 'ERRO DE GRAVACAO EMPR2025'
+           END-IF
+           .
+
+       3000-TERMINO.
+           CLOSE EXTTDV25
+
+           IF NOT SUCESSO-DV25
+              DISPLAY 'ERRO FECHAMENTO EXTTDV25'
+           END-IF
+
+           CLOSE EMPR202525
+
+           IF NOT SUCESSO-EP25
+              DISPLAY 'ERRO FECHAMENTO EMPR2025'
+           END-IF
+           
+           
+           DISPLAY '=================================================='
+           DISPLAY ' ACORDO PARA O CLIENTE ' B103DV25-NOME
+           DISPLAY '                 ACORDO A VISTA                    ' 
+           DISPLAY ' ACORDO A VISTA........' WS-ACORDO-AVISTA
+           DISPLAY ' --------------------------------------------------' 
+           DISPLAY '                 ACORDO PARCELADO                  ' 
+           DISPLAY ' VALOR DA PARCELA.........' WS-VALOR-PARC
+           DISPLAY ' VALOR DO JUROS PARCELA...' WS-JUROS-PARC
+           DISPLAY ' VALOR TOTAL DAS PARCELAS.' WS-PARC-FINAL    
+           DISPLAY '=================================================='
+           
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL P103NX05              '
+           DISPLAY '=================================================='
+           .

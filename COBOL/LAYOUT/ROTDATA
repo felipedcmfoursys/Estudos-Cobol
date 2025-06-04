@@ -1,0 +1,54 @@
+      *----------------------------------------------------------------*
+      * BOOK DE ROTINA      - 9000-IMPRIME-DATA                        *
+      * NOME DO BOOK        - ROTDATA                                  *
+      * NOME DO PDS         - FS.FSYS003.BOOKLIB                       *
+      *----------------------------------------------------------------*
+       9000-IMPRIME-DATA.
+           ACCEPT WS-DATA-SISTEMA          FROM DATE
+           ACCEPT WS-DATA-JUL              FROM DAY
+           ACCEPT WS-DIA-SEMANA            FROM DAY-OF-WEEK
+
+      *    IDENTIFICACAO DO MES DA DATA GREGORIANA 02 *
+           EVALUATE WS-MES OF WS-DATA-SISTEMA
+               WHEN 01 MOVE 'JANEIRO'      TO WS-MES-EXT
+               WHEN 02 MOVE 'FEVEREIRO'    TO WS-MES-EXT
+               WHEN 03 MOVE 'MARCO'        TO WS-MES-EXT
+               WHEN 04 MOVE 'ABRIL'        TO WS-MES-EXT
+               WHEN 05 MOVE 'MAIO'         TO WS-MES-EXT
+               WHEN 06 MOVE 'JUNHO'        TO WS-MES-EXT
+               WHEN 07 MOVE 'JULHO'        TO WS-MES-EXT
+               WHEN 08 MOVE 'AGOSTO'       TO WS-MES-EXT
+               WHEN 09 MOVE 'SETEMBRO'     TO WS-MES-EXT
+               WHEN 10 MOVE 'OUTUBRO'      TO WS-MES-EXT
+               WHEN 11 MOVE 'NOVEMBRO'     TO WS-MES-EXT
+               WHEN 12 MOVE 'DEZEMBRO'     TO WS-MES-EXT
+           END-EVALUATE
+      *    IDENTIFICACAO DO MES DIA DA SEMANA POR EXTENSO
+           EVALUATE WS-DIA-SEMANA
+               WHEN 1 MOVE 'SEGUNDA-FEIRA' TO WS-DIA-SEMANA-F
+               WHEN 2 MOVE 'TERCA-FEIRA'   TO WS-DIA-SEMANA-F
+               WHEN 3 MOVE 'QUARTA-FEIRA'  TO WS-DIA-SEMANA-F
+               WHEN 4 MOVE 'QUINTA-FEIRA'  TO WS-DIA-SEMANA-F
+               WHEN 5 MOVE 'SEXTA-FEIRA'   TO WS-DIA-SEMANA-F
+               WHEN 6 MOVE 'SABADO'        TO WS-DIA-SEMANA-F
+               WHEN 7 MOVE 'DOMINGO'       TO WS-DIA-SEMANA-F
+           END-EVALUATE
+      *
+      *                      1         2         3         4         5
+      *             12345678901234567890123456789012345678901234567890
+           DISPLAY '**************************************************'
+           DISPLAY 'DATA GREGORIANA 1 - ' WS-DATA-SISTEMA-F
+           DISPLAY 'DATA GREGORIANA 2 - ' WS-DIA OF
+                                          WS-DATA-SISTEMA
+                                        ' DE '
+                                          WS-MES-EXT
+                                        ' DE 20'
+                                          WS-ANO OF
+                                          WS-DATA-SISTEMA
+           DISPLAY 'DATA JULIANA        ' WS-DIA-J
+                                        ' DE 20'
+                                          WS-ANO-J
+           DISPLAY 'DIA DA SEMANA       ' WS-DIA-SEMANA-F
+           DISPLAY '**************************************************'
+           .
+

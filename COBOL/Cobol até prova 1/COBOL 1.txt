@@ -1,0 +1,33 @@
+0000 -  eexxnn02.
+	perform 1000 - inicializar
+	perform 2000 - processar until ws-fim = "s"
+	perform 3000 - termino
+	stop run
+	
+1000 - inicializar 
+	move 0 											to WS-ACUMULADOR
+													WS-CTHOSPITAL
+	move "N" 										to WS-FIM
+	perform 1500 - LER-SYSIN
+	
+1500 - LER-SYSIN
+	accept WS-QTDPACIENTES							FROM SYSIN
+		if WS-QTDPACIENTES <= 0 
+			MOVE "S" 								TO WS-FIM
+		else
+			COMPUTE WS-CTHOSPITAL = WS-CTHOSPITAL + 1
+			ou
+			ADD + 1 								TO WS-CTHOSPITAL
+		endif
+		.
+		
+2000 - PROCESSAR
+	WS-ACUMULADOR = WS-QTDPACIENTES + WS-ACUMULADOR 
+	ou
+	ADD WS-QTDPACIENTES								TO WS-ACUMULADOR
+	perform 1500 - LER-SYSIN
+	
+3000 - TERMINO
+	display "Quantidade de hospitais processados=" WS-CTHOSPITAL
+	display "Quantidade total de pacientes=" WS-ACUMULADOR
+	display "TERMINO NORMAL DO EEXXNN02"

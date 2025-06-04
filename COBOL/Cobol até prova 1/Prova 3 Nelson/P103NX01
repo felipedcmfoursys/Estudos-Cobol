@@ -1,0 +1,159 @@
+      *--------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *--------------------------------------------------------------*
+       PROGRAM-ID.                         P103NX01.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT EXTTDO25 ASSIGN TO UT-S-EXTTDO25
+           FILE STATUS IS FS-EXTTDO25
+           .
+           SELECT EXTTAO25 ASSIGN TO UT-S-EXTTAO25
+           FILE STATUS IS FS-EXTTAO25
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  EXTTDO25
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS REG-EXTTDO25
+           .
+
+           COPY B103DO25.
+       FD  EXTTAO25
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS REG-EXTTAO25
+           .
+           COPY B103AO25.
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+      * VARIAVEIS ESPELHO DOS REGISTROS                              *
+      *--------------------------------------------------------------*
+       01  WS-REG-B103DO25.
+           05 WS-B103DO25-CPF              PIC X(11).
+           05 WS-B103DO25-NOME             PIC X(16).
+           05 WS-B103DO25-DATA             PIC X(10).
+           05 WS-B103DO25-SALDO            PIC S9(11)V99 COMP-3.
+
+       01  WS-REG-B103AO25.
+           05 WS-B103AO25-CPF              PIC X(11).
+           05 WS-B103AO25-NOME             PIC X(16).
+           05 WS-B103AO25-DATA             PIC X(10).
+           05 WS-B103AO25-SALDO            PIC S9(11)V99 COMP-3.
+      *--------------------------------------------------------------*
+      * VARIAVEIS AUXILIARES                                         *
+      *--------------------------------------------------------------*
+       77  WS-SALDOTOTAL                   PIC S9(11)V99 COMP-3.
+       77  WS-CPFANT                       PIC X(11).
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-EXTTDO25                     PIC X(02).
+           88 SUCESSO-E                            VALUE "00".
+           88 FIM-ARQ-E                            VALUE "10".
+
+       01  FS-EXTTAO25                     PIC X(02).
+           88 SUCESSO-S                            VALUE "00".
+           88 FIM-ARQ-S                            VALUE "10".
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*
+       77  WS-CTLIDO                       PIC 9(04) COMP.
+       77  WS-CTGRAV                       PIC 9(04) COMP.
+
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+       0000-P103NX01.
+           DISPLAY "ATE AQUI"
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR UNTIL FIM-ARQ-E
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+       1000-INICIALIZAR.
+           OPEN INPUT EXTTDO25
+           IF NOT SUCESSO-E
+              DISPLAY "ERRO ABERTURA EXTTDO25"
+           END-IF
+
+           OPEN OUTPUT EXTTAO25
+           IF NOT SUCESSO-S
+              DISPLAY "ERRO ABERTURA EXTTAO25"
+              DISPLAY FS-EXTTAO25
+           END-IF
+           .
+
+       1500-LER-EXTTDO25.
+           READ EXTTDO25 INTO WS-REG-B103AO25
+           IF FIM-ARQ-E
+              MOVE HIGH-VALUES             TO WS-B103AO25-CPF
+           ELSE
+              DISPLAY "ERRO LEITURA DE ARQUIVO EXTTDO25"
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           IF WS-CPFANT EQUAL TO SPACES
+              MOVE WS-B103AO25-CPF            TO WS-CPFANT
+           ELSE
+              IF WS-B103AO25-CPF = WS-CPFANT
+                 PERFORM 2100-CPF-IGUAL
+              ELSE
+                 PERFORM 2200-CPF-DIF
+              END-IF
+           END-IF
+
+           .
+       2100-CPF-IGUAL.
+           COMPUTE WS-SALDOTOTAL = WS-SALDOTOTAL + WS-B103AO25-SALDO
+           PERFORM 1500-LER-EXTTDO25
+           .
+
+       2200-CPF-DIF.
+           PERFORM 2500-GRAVAR
+           MOVE 0                       TO WS-SALDOTOTAL
+           MOVE WS-B103AO25-CPF         TO WS-CPFANT
+           PERFORM 2100-CPF-IGUAL
+           .
+       2500-GRAVAR.
+           WRITE REG-B103AO25           FROM WS-REG-B103AO25
+           IF NOT SUCESSO-S
+              DISPLAY "ERRO GRAVACAO EXTTAO25"
+           END-IF
+
+           .
+       3000-TERMINO.
+           CLOSE EXTTDO25
+           IF NOT SUCESSO-E
+              DISPLAY "ERRO FECHAMENTO DO EXTTDO25"
+           END-IF
+
+           CLOSE EXTTAO25
+           IF NOT SUCESSO-S
+              DISPLAY "ERRO FECHAMENTO DO EXTTAO25"
+           END-IF
+
+           DISPLAY '================================================='
+           DISPLAY 'TERMINO NORMAL DO PROGRAMA P103NX01             '
+           DISPLAY '================================================='
+           .

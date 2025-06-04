@@ -1,0 +1,623 @@
+*--------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *-------------------------------------------------------------*
+       PROGRAM-ID.                         RLTRIO1.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT RELMOV01 ASSIGN TO UT-S-RELMOV01
+           FILE STATUS IS FS-RELMOV01
+           .
+
+           SELECT MOVTOEST ASSIGN TO UT-S-MOVTOEST
+           FILE STATUS IS FS-MOVTOEST
+           .
+
+           SELECT CADPRD ASSIGN TO UT-S-CADPRD
+           FILE STATUS IS FS-CADPRD
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  MOVTOEST
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 43 CHARACTERS
+           DATA RECORD IS FD-MOVTOEST
+           .
+       01  FD-MOVTOEST                     PIC X(43).
+
+       FD  RELMOV01
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 80 CHARACTERS
+           DATA RECORD IS FD-RELMOV01
+           .
+       01  FD-RELMOV01                     PIC X(80).
+
+       FD  CADPRD  
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 69 CHARACTERS
+           DATA RECORD IS REG-CADPRD  
+           .
+       01  REG-CADPRD.
+           05 CODPRD                       PIC X(04).
+           05 DESCPROD                     PIC X(20).
+           05 UNIPROD                      PIC X(05).
+           05 LOCALPROD                    PIC X(05).
+           05 QTDEST                       PIC 9(05).
+           05 QTDMAX                       PIC 9(05).
+           05 QTDMIN                       PIC 9(05).
+           05 PRECOCOMPRA                  PIC 9(06)V99.
+           05 PRECOVENDA                   PIC 9(06)V99.
+           05 PRECOMIS                     PIC 9(02)V99.
+
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+      * LAYOUT DOS ARQUIVOS                                          *
+      *--------------------------------------------------------------* 
+       01  WS-REG-MOVTOEST.
+           05 WS-TIPO-REG-MOVTO            PIC X(01).
+           05 FILLER                       PIC X(32).
+
+       01  WS-REG-MOVTOEST-HEADER          REDEFINES WS-REG-MOVTOEST.
+           05 FILLER                       PIC X(01).
+           05 WS-SIGLA-SYS-CAD             PIC X(05).
+           05 WS-ANO-MES-REF-CAD           PIC X(06).
+           05 FILLER                       PIC X(21). 
+
+       01  WS-REG-MOVTOEST-DATA            REDEFINES WS-REG-MOVTOEST.
+           05 FILLER                       PIC X(01).
+           05 WS-NUMMOVTO                  PIC 9(08).
+           05 WS-DATAMOVTO                 PIC 9(08).
+           05 WS-HORAMOVTO                 PIC 9(06).
+           05 WS-CODPRODMOVTO              PIC 9(04).
+           05 WS-TIPOMOVTO                 PIC X(01).
+           05 WS-QTDMOVTO                  PIC 9(08) COMP-3.
+
+       01  WS-REGMOVTOEST-TRAILER          REDEFINES WS-REG-MOVTOEST.
+           05 FILLER                       PIC X(01).
+           05 WS-QTDREG-MOVTO              PIC 9(05).
+           05 FILLER                       PIC X(27).          
+      *---------------------------------------------------------------*
+      *  LAYOUT DO RELATORIO                                          *
+      *---------------------------------------------------------------* 
+       01  WS-CABEC1.
+           05 WS-DATA-CABEC1               PIC X(10).
+           05 FILLER                       PIC X(17)
+                                               VALUE SPACES.
+
+           05 FILLER                       PIC X(46)
+                                               VALUE
+           " WEYLAND-YUTANI, CONSTRUINDO MUNDOS MELHORES".
+
+           05 FILLER                       PIC X(18).
+                                               VALUE SPACES.                                    
+           05 WS-HORA-CABEC1               PIC X(08).
+
+       01  WS-CABEC2                       
+           05 FILLER                       PIC X(50)
+                                               VALUE
+              'RELATORIO DE MOVIMENTACAO DE ESTOQUE  (REFERENCIA '.
+           05 WS-REF-CABEC2                PIC X(07).
+           05 FILLER                       PIC X(18)
+                                               VALUE
+              ')            PAG. '. 
+           05 WS-PAG-CABEC2                PIC Z.ZZ9.
+
+       01  WS-CABEC3.
+           05 FILLER                       PIC X(80)
+                                               VALUE ALL '-'.
+
+       01  WS-CABEC4.
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "         NUMERO        DATA          HOR'.
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "A        PRODUTO    QUANTIDADE          ".
+
+       01  WS-CABEC5.
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              '         ----------    ----------    ---'.                                        
+           
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              '-----    -------    -----------         '.                                        
+      *----------------------------------------------------------------* 
+      *    DETALHES                                                    * 
+      *----------------------------------------------------------------* 
+       
+       01  WS-LINDET.
+           05 FILLER                       PIC X(09).
+                                                   VALUE SPACES.
+           05 LD-NUMOVTO                   PIC 99.999.999.
+           05 FILLER                       PIC X(04).
+                                                   VALUE SPACES.
+           05 LD-DATAMOVTO                 PIC X(10).
+           05 FILLER                       PIC X(04)
+                                                   VALUE SPACES.
+
+           05 LD-HORAMOVTO                 PIC X(08).
+           05 FILLER                       PIC X(06)
+                                                   VALUE SPACES.
+
+           05 LD-CODPRODMOVTO              PIC 9(04).
+           05 FILLER                       PIC X(03)
+                                                   VALUE ' - '.
+
+           05 LD-DESCPRODMOVTO             PIC X(20)
+           05 FILLER                       PIC X(04)
+                                                   VALUE SPACES.                                            
+
+           05 LD-QTDMOVTO                  PIC ZZ.ZZZ.ZZ9+.
+           05 FILLER                       PIC X(09)
+                                                   VALUE SPACES.
+      
+      *----------------------------------------------------------------* 
+      *    RODAPE                                                      * 
+      *----------------------------------------------------------------* 
+       01  WS-RODAPE1                      PIC X(80)
+                                                   VALUE ALL "-".
+       01  WS-RODAPE2.
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "             WEYLAND-YUTANI             ".
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "       CONSTRUINDO MUNDOS MELHORES      ".
+
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-MOVTOEST                     PIC X(02).
+           88 SUCESSO-M                            VALUE '00'.
+           88 FIM-ARQ-M                            VALUE '10'.
+     
+       01  FS-RELMOV01                     PIC X(02).
+           88 SUCESSO-R                            VALUE '00'.
+           88 FIM-ARQ-R                            VALUE '10'.
+
+       01  FS-CADPRD                       PIC X(02).
+           88 SUCESSO-C                            VALUE '00'.
+           88 FIM-ARQ-C                            VALUE '10'.
+      *
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*
+       77  WS-CTLIDO                       PIC 9(04).
+       77  WS-CTDESP                       PIC 9(04).
+       77  WS-CTIMP                        PIC 9(04).
+       77  WS-CTLIN                        PIC 9(04).
+       77  WS-CTPAG                        PIC 9(04).
+       77  WS-PULA                         PIC 9(04).
+       77  WS-QTDREP                       PIC 9(04).
+
+       01  WS-TAB-CADPROD.
+           05 WS-REG-TAB-CADPROD OCCURS 100 TIMES
+               ASCENDING KEY WS-TAB-CODPRD INDEXED BT IDX1.
+               10 WS-TAB-CODPRD            PIC X(04).
+               10 WS-TAB-DESCPRD           PIC X(20).
+       77  WS-INDICE                       PIC 9(03).
+       77  WS-FLAG                         PIC X(01).
+       77
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE DATA                                            *
+      *--------------------------------------------------------------*
+       01  WS-DATA-SYS.
+           05 WS-ANO                       PIC 99.
+           05 WS-MES                       PIC 99.
+           05 WS-DIA                       PIC 99.
+
+       01 WS-HORA-SYS.
+           05 WS-HORA                      PIC 99.
+           05 WS-MINUTO                    PIC 99.
+           05 WS-SEGUNDO                   PIC 99.
+
+       01  WS-DATA-FORMATADA.
+           05 WS-DIA                       PIC 99.
+           05 FILLER                       PIC X(01) VALUE "/".
+
+           05 WS-MES                       PIC 99.
+           05 FILLER                       PIC X(02) VALUE "20".
+
+           05 WS-ANO                       PIC 99.
+
+       01  WS-HORA-FORMATADA.
+           05 WS-HORA                      PIC 99.
+           05 FILLER                       PIC X(01) VALUE ":".
+
+           05 WS-MINUTO                    PIC 99.
+           05 FILLER                       PIC X(01) VALUE "/".
+
+           05 WS-SEGUNDO                   PIC 99.
+           
+           COPY VARPROC.
+           COPY VARDATA.
+
+      *--------------------------------------------------------------*
+      *    VARIAVEIS ESPELHO
+      *--------------------------------------------------------------*
+       01  WS-REG-CADPRD.
+           05 WS-CODPRD                    PIC X(04).
+           05 WS-DESCPROD                  PIC X(20).
+           05 WS-UNIPROD                   PIC X(05).
+           05 WS-LOCALPROD                 PIC X(05).
+           05 WS-QTDEST                    PIC 9(05).
+           05 WS-QTDMAX                    PIC 9(05).
+           05 WS-QTDMIN                    PIC 9(05).
+           05 WS-PRECOCOMPRA               PIC 9(06)V99.
+           05 WS-PRECOVENDA                PIC 9(06)V99.
+           05 WS-PRECOMIS                  PIC 9(02)V99.
+
+       01  WS-MSG-COMUNICACAO.
+           05 WS-MENS-CODPROD              PIC 9(04).
+           05 WS-MENS-TIPOMOVTO            PIC X(01).
+           05 WS-MENS-QTDE                 PIC 9(08) COMP-3
+           05 WS-MENS-CLASSIF              PIC X(01).    
+            
+      *--------------------------------------------------------------*
+       LINKAGE                             SECTION.
+      *--------------------------------------------------------------*
+       01  LS-PARAMETRO.
+           05 LS-LENGTH                    PIC S9(04) COMP.
+           05 LS-DATAREF                   PIC X(10).
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+       0000-MAIN.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+               UNTIL WS-TIPO-REG-MOVTO = 'T'
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           ACCEPT WS-HORA-INICIAL FROM TIME 
+           ACCEPT WS-DATA-SYS FROM DATE
+
+           MOVE 0                          TO WS-CTLIDO
+                                              WS-CTPAG
+                                              WS-CTIMP
+           MOVE 99                         TO WS-CTLIN
+
+           OPEN INPUT MOVTOEST
+
+           IF NOT SUCESSO-M
+               DISPLAY "ERRO ABERTURA MOVTOEST"
+               DISPLAY FS-MOVTOEST
+               GO TO 9000-ERRO
+           END-IF
+           
+           IF FIM-ARQ-M
+               DISPLAY "ERRO LEITURA PRIMEIRO REGISTRO MOVTOEST"
+               DISPLAY FS-MOVTOEST
+               GO TO 9000-ERRO
+           END-IF
+
+           IF WS-TIPO-REG-MOVTO NOT EQUAL TO 'H'
+               DISPLAY 'PRIMEIRO REGISTRO NAO EH H'
+               DISPLAY FS-MOVTOEST
+               GO TO 9000-ERRO
+           END-IF
+
+           MOVE TIPO-REG-MOVTOEST           TO WS-TIPO-REG-MOVTO
+
+           OPEN OUTPUT RELMOV01
+
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO ABERTURA RELMOV01"
+               DISPLAY FS-RELMOV01
+               GO TO 9000-ERRO
+           END-IF
+           
+           IF WS-TIPO-REG-MOVTO NOT EQUAL TO 'D'
+               DISPLAY 'SEGUNDO REGISTRO NAO EH D'
+               DISPLAY FS-MOVTOEST
+               GO TO 9000-ERRO
+           END-IF
+           
+           OPEN INPUT CADPRD
+
+           IF NOT SUCESSO-C
+               DISPLAY "ERRO ABERTURA CADPRD"
+               DISPLAY FS-CADPRD  
+               GO TO 9000-ERRO
+           END-IF
+          
+           PERFORM 9100-FORMATA-DATA-HORA
+
+           INITIALIZE WS-INDICE
+
+           PERFORM 1500-CARREGA-TABELA
+           .
+           
+       1500-CARREGA-TABELA.
+           READ CADPRD INTO WS-REG-CADPRD
+
+           IF SUCESSO-C
+               ADD 1                        TO WS-INDICE
+               MOVE WS-CODPRD               TO WS-TAB-CODPRD
+               MOVE WS-DESCPROD             TO WS-TAB-DESCPRD
+           ELSE
+               IF NOT EQUAL FIM-ARQ-C
+                    DISPLAY 'O ARQUIVO NAO FOI ATE O FIM'
+                    DISPLAY FS-CADPRD  
+                    GO TO 9000-ERRO
+               END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           MOVE 'N' TO WS-FLAG
+
+           IF WS-DATAMOVTO >= LS-DATAREF
+               MOVE 'S' WS-FLAG
+
+           IF WS-FLAG = 'S'
+               MOVE WS-CODPRODMOVTO         TO WS-MENS-CODPROD
+               MOVE WS-TIPOMOVTO            TO WS-MENS-TIPOMOVTO
+               MOVE WS-QTDMOVTO             TO WS-MENS-QTDE
+               CALL WS-PGMAUX03
+                   ????
+               END-CALL
+           END-IF
+
+           IF WS-MENS-CLASSIF = 0
+               MOVE 'N'                     TO WS-FLAG
+           END-IF 
+
+           IF WS-FLAG = 'S'      
+               IF WS-CTLIN > 49
+                   PERFORM 2100-IMPRIME-CABECALHO
+               END-IF
+
+               PERFORM 2200-IMPRIME-DETALHE
+
+               IF WS-CTLIN = 48
+                   PERFORM 2300-IMPRIME-RODAPE
+           ELSE
+               ADD 1                        TO WS-CTDESP
+           END-IF    
+           PERFORM 1500-CARREGAR-TABELA
+           .
+
+       2100-IMPRIME-CABECALHO.
+           MOVE WS-DATA-FORMATADA           TO WS-DATA-CABEC1
+           MOVE WS-HORA-FORMATADA           TO WS-HORA-CABEC1
+           ADD 1                            TO WS-CTPAG
+           MOVE WS-CTPAG                    TO WS-PAG-CABEC2
+
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO WS-CABEC1"
+               DISPLAY FS-RELMOV01  
+           END-IF
+
+           WRITE FD-RELMOV01 FROM WS-CABEC2
+
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO CABEC2"
+               DISPLAY FS-RELMOV01  
+           END-IF
+
+           WRITE FD-RELMOV01 FROM WS-CABEC3
+
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO WS-CABEC3"
+               DISPLAY FS-RELMOV01 
+           END-IF
+
+           WRITE FD-RELMOV01 FROM WS-CABEC4
+
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO WS-CABEC4"
+               DISPLAY FS-RELMOV01  
+           END-IF
+
+           MOVE 5                          TO WS-CTLIN
+           .
+
+       2200-IMPRIME-DETALHE.
+           MOVE WS-NUMMOVTO                TO LD-NUMOVTO
+           MOVE WS-DATAMOVTO               TO LD-DATAMOVTO
+           MOVE WS-HORAMOVTO               TO LD-HORAMOVTO
+           MOVE WS-CODPRODMOVTO            TO LD-CODPRODMOVTO
+
+           IF WS-TIPOMOVTO = 'E' 
+               MOVE WS-QTDMOVTO            TO LD-QTDMOVTO
+           ELSE
+               MULTIPLY WS-QTDMOVTO BY (-1)
+                   GIVING LD-QTDMOVTO
+           END-IF
+           
+           fazer busca binaria?????
+               IF FIM-ARQ-C 
+                   MOVE 'NAO ACHASTE NOTHING' TO LD-DESCPRODMOVTO
+               END-IF
+               IF WS-TAB-CODPRD = WS-CODPRODMOVTO
+                   MOVE WS-TAB-DESCPRD        TO LD-DESCPRODMOVTO
+               END-IF
+
+           WRITE FD-RELMOV01 FROM WS-LINDET
+           IF NOT SUCESSO-C
+               DISPLAY 'ERRO GRAVACAO RLEMOV01' 
+               DISPLAY FS-CADPRD  
+               GO TO 9000-ERRO
+           END-IF
+
+           ADD 1                           TO WS-CTIMP
+           ADD 1                           TO WS-CTLIN
+           .
+
+       2300-IMPRIME-RODAPE
+           COMPUTE WS-PULA = 48 - WS-CTLIN
+
+           WRITE FD-RELMOV01 FROM WS-RODAPE1 AFTER WS-PULA LINES
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO WS-RODAPE1"
+               DISPLAY FS-RELMOV01
+           END-IF
+
+           WRITE FD-RELMOV01 FROM WS-RODAPE2
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO WS-RODAPE2"
+               DISPLAY FS-RELMOV01
+           END-IF
+
+           MOVE 50 TO WS-CTLIN
+           . 
+
+       3000-TERMINO.
+           PERFORM 9000-IMPRIME-DATA
+
+           IF WS-CTLIN < 50 
+               PERFORM 2300-IMPRIME-RODAPE
+
+           CLOSE MOVTOEST
+           IF NOT SUCESSO-M
+               DISPLAY "ERRO FECHAMENTO MOVTOEST"
+               DISPLAY FS-MOVTOEST
+           END-IF
+                             
+           CLOSE RELMOV01
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO FECHAMENTO RELMOV01"
+               DISPLAY FS-RELMOV01
+           END-IF
+
+           IF WS-QTDREG-MOVTO NOT EQUAL TO WS-CTIMP
+               MOVE 12 TO RETURN-CODE
+               STOP RUN
+           END-IF
+
+           CLOSE CADPRD  
+
+           IF FS-CADPRD NOT = '00'
+              DISPLAY 'ERRO DE FECHAMENTO CADPRD' 
+              DISPLAY FS-CADPRD
+              GO TO 9000-ERRO
+           END-IF
+
+           ACCEPT WS-HORARIO-FINAL FROM TIME
+           
+           
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '                 WEYLAND-YUTANI                   '
+           DISPLAY '--------------------------------------------------'
+           DISPLAY 'TOTAL DE MOVIMENTOS LIDOS.........' WS-CTLIDO
+           DISPLAY 'TOTAL DE LINHAS IMPRESSAS.........' WS-CTLIN
+           DISPLAY 'TOTAL DE PAGINAS IMPRESSAS........' WS-CTPAG
+           DISPLAY 'TOTAL DE REGISTROS DESPREZADOS....' WS-CTDESP
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '         TEMPO TOTAL DE PROCESSAMENTO             '
+           
+           PERFORM 9200-CALCULA-TEMPO-PROC
+           DISPLAY                   WS-DIFERENCA
+           
+           .
+
+       9000-ERRO.
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '   XXX      TERMINO ANORMAL DO RLTRIO4      XXX   '
+           DISPLAY '--------------------------------------------------'
+           STOP RUN
+           .
+
+       9000-IMPRIME-DATA.                                               
+           ACCEPT WS-DATA-SISTEMA FROM DATE                             
+           MOVE WS-DIA                     TO WS-DIA-F                  
+           MOVE WS-MES                     TO WS-MES-F                  
+           MOVE WS-ANO                     TO WS-ANO-F                  
+           ACCEPT WS-DATA-JUL FROM DAY                                  
+           ACCEPT WS-DIA-SEMANA FROM DAY-OF-WEEK                        
+      *                                                                 
+           EVALUATE WS-MES OF WS-DATA-SISTEMA                           
+              WHEN 01 MOVE 'JANEIRO'       TO WS-MES-EXT                
+              WHEN 02 MOVE 'FEVEREIRO'     TO WS-MES-EXT                
+              WHEN 03 MOVE 'MARCO'         TO WS-MES-EXT                
+              WHEN 04 MOVE 'ABRIL'         TO WS-MES-EXT                
+              WHEN 05 MOVE 'MAIO'          TO WS-MES-EXT                
+              WHEN 06 MOVE 'JUNHO'         TO WS-MES-EXT                
+              WHEN 07 MOVE 'JULHO'         TO WS-MES-EXT                
+              WHEN 08 MOVE 'AGOSTO'        TO WS-MES-EXT                
+              WHEN 09 MOVE 'SETEMBRO'      TO WS-MES-EXT                
+              WHEN 10 MOVE 'OUTUBRO'       TO WS-MES-EXT                
+              WHEN 11 MOVE 'NOVEMBRO'      TO WS-MES-EXT                
+              WHEN 12 MOVE 'DEZEMBRO'      TO WS-MES-EXT                
+           END-EVALUATE
+
+           EVALUATE WS-DIA-SEMANA                                      
+              WHEN 1 MOVE 'SEGUNDA'        TO WS-DIA-SEMANA-F           
+              WHEN 2 MOVE 'TERCA'          TO WS-DIA-SEMANA-F           
+              WHEN 3 MOVE 'QUARTA'         TO WS-DIA-SEMANA-F           
+              WHEN 4 MOVE 'QUINTA'         TO WS-DIA-SEMANA-F           
+              WHEN 5 MOVE 'SEXTA'          TO WS-DIA-SEMANA-F           
+              WHEN 6 MOVE 'SABADO'         TO WS-DIA-SEMANA-F           
+              WHEN 7 MOVE 'DOMINGO'        TO WS-DIA-SEMANA-F           
+           END-EVALUATE                                                 
+           DISPLAY '**************************************************' 
+           DISPLAY 'DATA GREGORIANA 1 - ' WS-DATA-SISTEMA-F             
+           DISPLAY 'DATA GREGORIANA 2 - ' WS-DIA OF                     
+                                          WS-DATA-SISTEMA               
+                                        ' DE '                          
+                                          WS-MES-EXT                   
+                                        ' DE 20'                        
+                                          WS-ANO OF                    
+                                          WS-DATA-SISTEMA              
+           DISPLAY 'DATA JULIANA       - ' WS-DIA-J                    
+                                        ' DE 20'                      
+                                          WS-ANO-J                    
+           DISPLAY 'DIA DA SEMANA         - ' WS-DIA-SEMANA-F           
+           DISPLAY '*******************************************'        
+           . 
+                                                                          
+       9100-FORMATA-DATA-HORA.
+           ACCEPT WS-DATA-SYS FROM DATE
+           ACCEPT WS-HORA-SYS FROM TIME
+
+           MOVE CORRESPONDING WS-DATA-SYS TO WS-DATA-FORMATADA
+           MOVE CORRESPONDING WS-HORA-SYS TO WS-HORA-FORMATADA
+           .
+
+       9200-CALCULA-TEMPO-PROC.
+           COMPUTE WS-DIFERENCA = (WS-HORA-F * 360000 +                 
+                                   WS-MIN-F  *   6000 +                 
+                                   WS-SEG-F  *    100 +                 
+                                   WS-CENT-F)         -                 
+                                  (WS-HORA-I * 360000 +                 
+                                   WS-MIN-I  *   6000 +                
+                                   WS-SEG-I  *    100 +                 
+                                   WS-CENT-I)                          
+                                                                       
+           COMPUTE WS-HORA-P    = WS-DIFERENCA / 360000               
+           COMPUTE WS-DIFERENCA = WS-DIFERENCA - WS-HORA-P * 360000   
+           COMPUTE WS-MIN-P     = WS-DIFERENCA / 6000                  
+           COMPUTE WS-DIFERENCA = WS-DIFERENCA - WS-MIN-P  *   6000    
+           COMPUTE WS-SEG-P     = WS-DIFERENCA / 100                   
+           COMPUTE WS-DIFERENCA = WS-DIFERENCA - WS-SEG-P  *    100     
+           COMPUTE WS-CENT-P    = WS-DIFERENCA                          
+                                                                     
+           MOVE WS-HORA-P                  TO WS-HORA-PF                
+           MOVE WS-MIN-P                   TO WS-MIN-PF                 
+           MOVE WS-SEG-P                   TO WS-SEG-PF                
+           MOVE WS-CENT-P                  TO WS-CENT-PF                  

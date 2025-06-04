@@ -1,0 +1,233 @@
+      *--------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *--------------------------------------------------------------*
+       PROGRAM-ID.                         EXECARGA.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT CADCLI ASSIGN TO UT-S-CADCLI
+           FILE STATUS IS FS-CADCLI
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  CADCLI
+           RECORDING MODE IS F.
+
+           COPY BKEXEAC REPLACING ==::== BY ====.
+
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+      * VARIAVEIS ESPELHO DOS REGISTROS                              *
+      *--------------------------------------------------------------*
+           COPY BKEXEAC REPLACING ==::== BY ==WS-==.
+
+           COPY VARDATA.
+           COPY VARTIME.
+
+      *    BOOK DAS VARIAVEIS HOSPEDEIRAS
+           EXEC SQL
+               INCLUDE BKEXETC
+           END-EXEC
+           .
+      *    BOOK DAS VARIAVEIS PARA USO DO SQL
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC
+
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-CADCLI                       PIC X(02).
+           88 SUCESSO-CAD                          VALUE "00".
+           88 FIM-ARQ-CAD                          VALUE "10".
+
+       77  WS-SQLCODE                      PIC +9(9).
+      *
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*
+
+       77  WS-CTLIDO                       PIC 9(04) COMP.
+       77  WS-CTINS                        PIC 9(04) COMP.
+       77  WS-CTDUP                        PIC 9(04) COMP.
+       77  WS-CTINV                        PIC 9(04) COMP.
+      *--------------------------------------------------------------*
+      * VARIAVEIS COM MASCARA DE EDICAO (FORMATADAS)                 *
+      *--------------------------------------------------------------*
+       77  WS-CTLIDO-F                     PIC ZZZ9.
+       77  WS-CTINS-F                      PIC ZZZ9.
+       77  WS-CTDUP-F                      PIC ZZZ9.
+       77  WS-CTINV-F                      PIC ZZZ9.
+      *
+      *--------------------------------------------------------------*
+
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+       0000-PRINCIPAL.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR UNTIL FIM-ARQ-CAD
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           ACCEPT WS-HORARIO-INICIAL FROM TIME
+
+           MOVE 0                           TO WS-CTLIDO
+                                               WS-CTINS
+                                               WS-CTDUP
+                                               WS-CTINV
+
+           OPEN INPUT CADCLI
+           IF NOT SUCESSO-CAD
+               DISPLAY "DEU RUIM PA ABRIR O CADCLI FIO"
+               DISPLAY FS-CADCLI
+               GO TO 9000-ERRO
+           END-IF
+
+           PERFORM 1500-LER-CADCLI
+           .
+
+       1500-LER-CADCLI.
+           READ CADCLI INTO WS-REG-CADCLI
+           IF SUCESSO-CAD
+               ADD 1                         TO WS-CTLIDO
+           ELSE
+               IF NOT FIM-ARQ-CAD
+                   DISPLAY "DEU RUIM PA LER O CADCLI FIO"
+                   DISPLAY FS-CADCLI
+                   GO TO 9000-ERRO
+               END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+      *----------------------------------------------------------------*
+      *    MOVER DADOS DA VARIAVELS ESPELHO PARA HOSPEDEIRA            *
+      *----------------------------------------------------------------*
+           MOVE WS-CODCLI-CADCLI             TO CODCLI
+
+           IF WS-NOMECLI-CADCLI = SPACES
+              MOVE +0                        TO NOMECLI-LEN
+           ELSE
+              MOVE +30                       TO NOMECLI-LEN
+           END-IF
+
+           MOVE WS-NOMECLI-CADCLI            TO NOMECLI-TEXT
+           MOVE +40                          TO ENDCLI-LEN
+           MOVE WS-ENDCLI-CADCLI             TO ENDCLI-TEXT
+           MOVE WS-FONECLI-CADCLI            TO FONECLI
+           MOVE +50                          TO EMAILCLI-LEN
+           MOVE WS-EMAILCLI-CADCLI           TO EMAILCLI-TEXT
+           MOVE WS-CPFCLI-CADCLI             TO CPFCLI
+           MOVE WS-SALDOCLI-CADCLI           TO SALDOCLI
+
+      *----------------------------------------------------------------*
+      *    INSERIR OS DADSO DA HOSPEDEIRA NA TABELA(SQL FIELDS)        *
+      *----------------------------------------------------------------*
+           EXEC SQL
+               INSERT INTO TBCLIENTE
+               (   CODCLI,
+                   NOMECLI,
+                   ENDCLI,
+                   FONECLI,
+                   EMAILCLI,
+                   CPFCLI,
+                   SALDOCLI
+               )
+               VALUES
+               (   :CODCLI,
+                   :NOMECLI,
+                   :ENDCLI,
+                   :FONECLI,
+                   :EMAILCLI,
+                   :CPFCLI,
+                   :SALDOCLI
+               )
+           END-EXEC
+
+      *----------------------------------------------------------------*
+      *    TESTAR SQLCODE                                              *
+      *----------------------------------------------------------------*
+           EVALUATE SQLCODE
+           WHEN 0
+               ADD 1 TO WS-CTINS
+           WHEN -803
+               ADD 1 TO WS-CTDUP
+           WHEN -545
+               ADD 1 TO WS-CTINV
+           WHEN OTHER
+               DISPLAY "ERRO INSERT TBCLIENTE"
+               DISPLAY SQLCODE
+               GO TO 9000-ERRO-DB2
+           END-EVALUATE
+
+           PERFORM 1500-LER-CADCLI
+           .
+
+       3000-TERMINO.
+           CLOSE CADCLI
+           IF NOT SUCESSO-CAD
+               DISPLAY "DEU POBREMA NO FECHAMENTO PARCEIRO"
+               DISPLAY FS-CADCLI
+               GO TO 9000-ERRO
+           END-IF
+
+           ACCEPT WS-HORARIO-FINAL FROM TIME
+
+           PERFORM 9000-CALCULA-TEMPO-PROC
+
+           MOVE WS-CTLIDO                     TO WS-CTLIDO-F
+           MOVE WS-CTINS                      TO WS-CTINS-F
+           MOVE WS-CTDUP                      TO WS-CTDUP-F
+           MOVE WS-CTINV                      TO WS-CTINV-F
+
+           PERFORM 9000-IMPRIME-DATA
+
+
+           DISPLAY '=================================================='
+           DISPLAY '        ESTATISCA FINAL DE PROCESSAMENTO          '
+           DISPLAY '=================================================='
+           DISPLAY 'QTDE. CLIENTES LIDOS CADCLI.........: ' WS-CTLIDO-F
+           DISPLAY 'QTDE. CLIENTES INSERIDOS TBCLIENTE..: ' WS-CTINS-F
+           DISPLAY 'QTDE. CLIENTES DUPLICADOS...........: ' WS-CTDUP-F
+           DISPLAY 'QTDE. CLIENTES INVALIDOS............: ' WS-CTINV-F
+           DISPLAY '=================================================='
+           DISPLAY 'TEMPO TOTAL DE PROCESSAMENTO...'
+           DISPLAY WS-TEMPO-PROCESSAMENTO
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL XXXXXXXX              '
+           DISPLAY '=================================================='
+           .
+      *
+       9000-ERRO-DB2.
+           DISPLAY '=================================================='
+           DISPLAY 'CODIGO...: ' WS-SQLCODE
+           DISPLAY '=================================================='
+           .
+
+       9000-ERRO.
+           DISPLAY '=================================================='
+           DISPLAY '==        TERMINO ANORMAL DO EXECARGA           =='
+           DISPLAY '=================================================='
+           STOP RUN
+           .
+
+           COPY ROTDATA.
+           COPY ROTPROC.
+

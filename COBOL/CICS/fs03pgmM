@@ -1,0 +1,217 @@
+      *----------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *----------------------------------------------------------------*
+       PROGRAM-ID.                         FS03PGMM.
+       AUTHOR.                             FELIPE.
+
+      *----------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *----------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+
+      *----------------------------------------------------------------*
+       DATA                                DIVISION.
+      *----------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *----------------------------------------------------------------*
+       77  WS-MSG-ERRO                     PIC X(80).
+       77  WS-LENGTH                       PIC S9(04) COMP.
+
+       01  WS-VAR-TEMPO.
+           05 WS-DATA                      PIC X(10).
+           05 WS-HORARIO                   PIC X(08).
+
+       01  WS-DFHCOMMAREA.
+           05 WS-FASE                      PIC X(01).
+
+           COPY FS03MNU.
+           COPY DFHAID.
+           COPY DFHBMSCA.
+      *----------------------------------------------------------------*
+       LINKAGE                             SECTION.
+      *----------------------------------------------------------------*
+       01  DFHCOMMAREA.
+           05 OCCURS 0 TO 24579 TIMES DEPENDING ON EIBCALEN
+                                           PIC X(01).
+      *----------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *----------------------------------------------------------------*
+           EXEC CICS HANDLE CONDITION
+              MAPFAIL(999-MAPFAIL)
+              ERROR(999-ERROR)
+           END-EXEC
+
+      * SELETOR DE FASE - O MENU PRINCIPAL POSSUI 2 FASES
+      *    FASE 1 - ENVIA O MAPA PARA O TERMINAL
+      *    FASE 2 - TRATA O CAMPO T1OPC
+      *
+           MOVE DFHCOMMAREA                TO WS-DFHCOMMAREA
+
+           IF EIBCALEN EQUAL 0
+              MOVE '1'                     TO WS-FASE
+           END-IF
+
+           EVALUATE WS-FASE
+              WHEN '1' PERFORM 100-FASE1
+              WHEN '2' PERFORM 200-FASE2
+              WHEN OTHER
+                 MOVE +80                  TO WS-LENGTH
+                 MOVE 'ERRO NO NUMERO DA FASE'
+                                           TO WS-MSG-ERRO
+                 PERFORM 999-ENCERRA-TRANSACAO
+           END-EVALUATE
+           .
+
+       100-FASE1.
+           MOVE LOW-VALUES                 TO MAPAMNUO
+           MOVE -1                         TO T1OPCL
+           MOVE 'SELECIONE A OPCAO E PRESSINE ENTER'
+                                           TO T1MSGO
+           MOVE DFHUNIMD                   TO T1OPCA
+           PERFORM 999-MANDA-TELA
+           PERFORM 999-CHAMA-FASE2
+           .
+
+       200-FASE2.
+           EXEC CICS HANDLE AID
+              ENTER   (210-ENTER)
+              PF3     (220-PF3)
+              PF5     (230-PF5)
+              CLEAR   (230-PF5)
+              ANYKEY  (240-ANYKEY)
+           END-EXEC
+
+           EXEC CICS RECEIVE
+              MAP   ('MAPAMNU')
+              MAPSET('FS03MNU')
+              INTO  (MAPAMNUI)
+           END-EXEC
+           .
+
+       210-ENTER.
+           IF T1OPCL EQUAL 0 OR T1OPCI EQUAL SPACES
+              MOVE 'ESCOLHA UMA OPCAO VALIDA'
+                                           TO T1MSGO
+              PERFORM 999-TRATA-FASE2
+           END-IF
+
+           EVALUATE T1OPCI
+              WHEN 'A'
+                 MOVE '1'                  TO WS-FASE
+
+                 EXEC CICS XCTL
+                   PROGRAM('FS03PGMA')
+                   COMMAREA(WS-DFHCOMMAREA)
+                   LENGTH(LENGTH OF WS-DFHCOMMAREA)
+                 END-EXEC
+
+              WHEN 'B' MOVE 'ESCOLHEU: INCLUIR   VSAM-KSDS' TO T1MSGO
+              WHEN 'C' MOVE 'ESCOLHEU: EXCLUIR   VSAM-KSDS' TO T1MSGO
+              WHEN 'D' MOVE 'ESCOLHEU: ALTERAR   VSAM-KSDS' TO T1MSGO
+              WHEN 'E' MOVE 'ESCOLHEU: LISTAR    VSAM-KSDS' TO T1MSGO
+              WHEN 'F' MOVE 'ESCOLHEU: CONSULTAR DB2      ' TO T1MSGO
+              WHEN 'G' MOVE 'ESCOLHEU: INCLUIR   DB2      ' TO T1MSGO
+              WHEN 'H' MOVE 'ESCOLHEU: EXCLUIR   DB2      ' TO T1MSGO
+              WHEN 'I' MOVE 'ESCOLHEU: ALTERAR   DB2      ' TO T1MSGO
+              WHEN 'J' MOVE 'ESCOLHEU: LISTAR    DB2      ' TO T1MSGO
+              WHEN OTHER
+                       MOVE 'OPCAO INVALIDA - TENTE NOVAMENTE'
+                                           TO T1MSGO
+           END-EVALUATE
+
+           PERFORM 999-TRATA-FASE2
+           .
+
+        220-PF3.
+           MOVE 'TERMINO NORMAL DA TRANSACAO F03M'
+                                           TO WS-MSG-ERRO
+           PERFORM 999-ENCERRA-TRANSACAO
+           .
+
+        230-PF5.
+           PERFORM 999-CHAMA-FASE1
+           .
+
+        240-ANYKEY.
+           MOVE 'TECLA PRESSIONADA INVALIDA!'
+                                           TO T1MSGO
+           PERFORM 999-TRATA-FASE2
+           .
+
+        999-ENCERRA-TRANSACAO.
+            EXEC CICS SEND TEXT
+               FROM (WS-MSG-ERRO)
+               LENGTH(WS-LENGTH)
+               ERASE FREEKB ALARM
+            END-EXEC
+
+            EXEC CICS RETURN
+            END-EXEC
+            .
+
+        999-MANDA-TELA.
+            MOVE EIBTRMID                  TO T1TERMO
+            MOVE EIBTRNID                  TO T1TRANO
+            MOVE EIBTASKN                  TO T1TASKO
+            MOVE WS-FASE                   TO T1FASEO
+
+            EXEC CICS ASSIGN
+               USERID(T1USRO)
+            END-EXEC
+
+            EXEC CICS LINK
+                PROGRAM('AUXCICS1')
+                COMMAREA(WS-VAR-TEMPO)
+                LENGTH(+18)
+            END-EXEC
+
+            MOVE WS-DATA                   TO T1DATAO
+            MOVE WS-HORARIO                TO T1HORAO
+
+            EXEC CICS SEND
+               MAP ('MAPAMNU')
+               MAPSET('FS03MNU')
+               FROM(MAPAMNUO)
+               ERASE FREEKB ALARM CURSOR
+            END-EXEC
+            .
+
+        999-CHAMA-FASE1.
+            MOVE '1'                       TO WS-FASE
+
+            EXEC CICS XCTL
+                PROGRAM('FS03PGMM')
+                COMMAREA(WS-DFHCOMMAREA)
+                LENGTH(LENGTH OF WS-DFHCOMMAREA)
+            END-EXEC
+            .
+
+        999-CHAMA-FASE2.
+            MOVE '2'                       TO WS-FASE
+
+            EXEC CICS RETURN
+                TRANSID('F03M')
+                COMMAREA(WS-DFHCOMMAREA)
+                LENGTH(LENGTH OF WS-DFHCOMMAREA)
+            END-EXEC
+            .
+
+        999-TRATA-FASE2.
+            MOVE -1                        TO T1OPCL
+            MOVE DFHUNIMD TO T1OPCA
+            PERFORM 999-MANDA-TELA
+            PERFORM 999-CHAMA-FASE2
+            .
+
+        999-MAPFAIL.
+           MOVE 'ERRO MAPA FS03MNU'        TO WS-MSG-ERRO
+           PERFORM 999-ENCERRA-TRANSACAO
+           .
+
+        999-ERROR.
+           MOVE 'ERRO GENERICO FS03PGMM'   TO WS-MSG-ERRO
+           PERFORM 999-ENCERRA-TRANSACAO
+           .
+

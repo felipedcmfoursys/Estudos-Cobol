@@ -1,0 +1,219 @@
+      *--------------------------------------------------------------*  
+       IDENTIFICATION                      DIVISION.                    
+      *--------------------------------------------------------------*  
+       PROGRAM-ID.                         CC03UF.                    
+       AUTHOR.                             FELIPE.                      
+      *                                                                 
+      *--------------------------------------------------------------*  
+       ENVIRONMENT                         DIVISION.       
+      *--------------------------------------------------------------*  
+       DATA                                DIVISION.                    
+      *--------------------------------------------------------------*  
+       FILE                                SECTION.                     
+      *--------------------------------------------------------------*  
+       WORKING-STORAGE                     SECTION.                    
+      *--------------------------------------------------------------*  
+	  * 
+      * MENSAGEM DE ENTRADA
+      *
+       01  WS-ENTRADA.
+           05 WS-TRANSACAO-E               PIC X(04).
+           05 FILLER                       PIC X(01).
+           05 WS-CODIGO-UF-E               PIC X(02).
+
+      * MENSAGEM DE SAIDA
+
+       01  WS-SAIDA.
+           03 WS-CODIGO-UF-S               PIC X(02).
+           03 FILLER                       PIC X(03)
+                                               VALUE " - ".
+       
+           03 WS-TEXTO-UF-S                PIC X(19).
+           03 FILLER                       PIC X(03)
+                                               VALUE " - ".
+       
+           03 WS-DATA-FORMATADA-S          PIC X(10).
+           03 FILLER                       PIC X(03) 
+                                               VALUE " - ".
+
+           03 WS-HORA-FORMATADA-S          PIC X(08).                                    
+
+      * VARIAVEIS AUXILIARES                                         
+ 
+       77  WS-ABSTIME                      PIC S9(15) COMP-3.                                 
+       77  WS-RESP                         PIC S9(08) COMP.          
+       77  WS-LENGTH                       PIC S9(04) COMP.             
+       77  WS-MENSAGEM-ERRO                PIC  X(80).             
+      *--------------------------------------------------------------*  
+       PROCEDURE                           DIVISION.                    
+      *--------------------------------------------------------------* 
+        
+      * LIMPAR A VARIAVELS DE ENTRADA - CASO HAJA CHAMADAS CONSECUTIVAS
+
+           INITIALIZE WS-ENTRADA
+
+      * RECEBENDO A MESANGEM DE ENTRADA
+       
+           MOVE 6                          TO WS-LENGTH
+               
+           EXEC CICS RECEIVE
+               INTO    (WS-ENTRADA)
+               LENGTH  (WS-LENGTH)
+               RESP    (WS-RESP)
+           END-EXEC
+
+      * TESTANDO O RESP DO RECEIVE
+       
+           IF WS-RESP = DFHRESP(NORMAL) OR DFHRESP (EOC)
+               CONTINUE
+           ELSE
+               IF WS-RESP = DFHRESP(LENGERR)
+                   PERFORM 9000-ERRO-TAMANHO
+               ELSE
+                   PERFORM 9100-ERRO-GENERICO
+               END-IF
+           END-IF
+
+      * PROCESSANDO A MENSAGEM DE ENTRADA
+      *                  1234567890123456789
+           EVALUATE WS-CODIGO-UF-E
+               WHEN 'AC'
+                   MOVE 'ACRE               '    TO WS-TEXTO-UF-S
+               WHEN 'AL'
+                   MOVE 'ALAGOAS            '    TO WS-TEXTO-UF-S
+               WHEN 'AP'
+                   MOVE 'AMAPA              '    TO WS-TEXTO-UF-S
+               WHEN 'AM'
+                   MOVE 'AMAZONAS           '    TO WS-TEXTO-UF-S
+               WHEN 'BA'
+                   MOVE 'BAHIA              '    TO WS-TEXTO-UF-S
+               WHEN 'CE'
+                   MOVE 'CEARA              '    TO WS-TEXTO-UF-S
+               WHEN 'DF'
+                   MOVE 'DISTRITO FEDERAL   '    TO WS-TEXTO-UF-S
+               WHEN 'ES'
+                   MOVE 'ESPIRITO SANTO     '    TO WS-TEXTO-UF-S
+               WHEN 'GO'
+                   MOVE 'GOIAS              '    TO WS-TEXTO-UF-S
+               WHEN 'MA'
+                   MOVE 'MARANHAO           '    TO WS-TEXTO-UF-S
+               WHEN 'MT'
+                   MOVE 'MATO GROSSO        '    TO WS-TEXTO-UF-S
+               WHEN 'MG'
+                   MOVE 'MINAS GERAIS       '    TO WS-TEXTO-UF-S
+               WHEN 'MS'
+                   MOVE 'MATO GROSSO DO SUL '    TO WS-TEXTO-UF-S
+               WHEN 'PA'
+                   MOVE 'PARA               '    TO WS-TEXTO-UF-S
+               WHEN 'PB'
+                   MOVE 'PARAIBA            '    TO WS-TEXTO-UF-S
+               WHEN 'PR'
+                   MOVE 'PARANA             '    TO WS-TEXTO-UF-S
+               WHEN 'PE'
+                   MOVE 'PERNAMBUCO         '    TO WS-TEXTO-UF-S
+               WHEN 'PI'
+                   MOVE 'PIAUI              '    TO WS-TEXTO-UF-S
+               WHEN 'RJ'
+                   MOVE 'RIO DE JANEIRO     '    TO WS-TEXTO-UF-S
+               WHEN 'RN'
+                   MOVE 'RIO GRANDE DO NORTE'    TO WS-TEXTO-UF-S
+               WHEN 'RS'
+                   MOVE 'RIO GRANDE DO SUL  '    TO WS-TEXTO-UF-S
+               WHEN 'RO'
+                   MOVE 'RONDONIA           '    TO WS-TEXTO-UF-S
+               WHEN 'RR'
+                   MOVE 'RORAIMA            '    TO WS-TEXTO-UF-S
+               WHEN 'SC'
+                   MOVE 'SANTA CATARINA     '    TO WS-TEXTO-UF-S
+               WHEN 'SP'
+                   MOVE 'SAO PAULO          '    TO WS-TEXTO-UF-S
+               WHEN 'SE'
+                   MOVE 'SERGIPE            '    TO WS-TEXTO-UF-S
+               WHEN 'TO'
+                   MOVE 'TOCANTINS          '    TO WS-TEXTO-UF-S
+           END-EVALUATE
+
+      * RECEBENDO E FORMATANDO DATA E HORA
+
+           EXEC CICS ASKTIME
+               ABSTIME(WS-ABSTIME)
+           END-EXEC
+
+           EXEC CICS FORMATTIME
+               ABSTIME(WS-ABSTIME)
+               DDMMYYYY(WS-DATA-FORMATADA)
+               DATESEP('/')
+               TIME(WS-HORA-FORMATADA)
+               TIMESEP(':')
+               RESP (WS-RESP)
+           END-EXEC
+
+      * TESTANDO O RESP DO FORMATTIME
+
+           IF WS-RESP =DFHRESP(NORMAL)
+               CONTINUE
+           ELSE
+               PERFORM 9100-ERRO-GENERICO
+           END-IF 
+
+      * EXIBINDO A MENSAGEM DE SAIDA
+
+           MOVE 39                         TO WS-LENGTH
+
+           EXEC CICS SEND TEXT
+               FROM    (WS-SAIDA)
+               LENGTH  (WS-LENGTH)
+               RESP    (WS-RESP)
+               ERASE   ALARM
+           END-EXEC
+
+      * TESTANDO O RESP DO SEND
+
+           IF WS-RESP = DFHRESP(NORMAL)
+               CONTINUE
+           ELSE
+               PERFORM 9100-ERRO-GENERICO
+           END-IF
+
+      * ENCERRANDO A TRANSACAO E RETORNANDO AO CICS       
+
+           EXEC CICS RETURN
+           END-EXEC
+           .
+
+      * ROTINA PARA TRATAR ERRO DE TAMANHO NA MENSAGEM DE ENTRADA
+       9000-ERRO-TAMANHO.
+           MOVE 80                         TO WS-LENGTH
+           MOVE 'SINTAXE INCORRETA, USAR: GI99 N'
+                                           TO WS-MENSAGEM-ERRO
+
+           EXEC CICS SEND
+               FROM (WS-MENSAGEM-ERRO)
+               LENGTH (WS-LENGTH)
+      *        ERASE ALARM
+           END-EXEC
+
+      * ENCERRANDO O PROGRAMA E RETORNANDO AO CICS
+
+           EXEC CICS RETURN
+           END-EXEC
+           .
+
+      * ROTINA PARA DEMAIS ERROS
+
+       9100-ERRO-GENERICO.
+           MOVE 80                         TO WS-LENGTH
+           MOVE 'OCORRESTE UM ERRO ESPERADO, AFINAL TU ERES UMA MULA'
+                                           TO WS-MENSAGEM-ERRO
+
+           EXEC CICS SEND
+               FROM (WS-MENSAGEM-ERRO)
+               LENGTH (WS-LENGTH)
+      *        ERASE ALARM
+           END-EXEC
+
+      * ENCERRANDO O PROGRAMA E RETORNANDO AO CICS
+
+           EXEC CICS RETURN
+           END-EXEC
+           .                     

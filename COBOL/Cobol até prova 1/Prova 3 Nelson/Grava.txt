@@ -1,0 +1,16 @@
+2100-GRAVAR-EXTTDO25.                           
+    WRITE REG-EXTTDO25 FROM WS-REG-CPEXTT25     
+    IF FS-EXTTDO25 = "00"                       
+       ADD 1                        TO WS-CTGRAV
+    ELSE                                        
+       MOVE FS-EXTTDO25             TO WS-FS    
+       DISPLAY ' ERRO GRAVACAO EXTTDO25'        
+    END-IF                                      
+    .                                           
+2200-GRAVAR-EXTTDO24.                           
+    WRITE REG-EXTTDO24 FROM WS-REG-CPEXTT24     
+    IF FS-EXTTDO24 = "00" 
+
+
+REG-EXTTDO24
+REG-EXTTDO25                      

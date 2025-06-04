@@ -1,0 +1,5 @@
+       01  REG-EXTTORD.                                                 00020002
+           05 CPF-ORD                      PIC X(11).                   00030002
+           05 NOME-ORD                     PIC X(16).                   00040002
+           05 DATA-ORD                     PIC X(10).                   00050002
+           05 SALDO-ORD                    PIC S9(11)V99 COMP-3.        00060002

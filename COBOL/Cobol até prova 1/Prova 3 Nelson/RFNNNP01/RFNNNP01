@@ -1,0 +1,288 @@
+      *--------------------------------------------------------------*  00010004
+       IDENTIFICATION                      DIVISION.                    00020004
+      *--------------------------------------------------------------*  00030004
+       PROGRAM-ID.                         XXXXXXXX.                    00040008
+       AUTHOR.                             FELIPE.                      00050008
+      *                                                                 00060004
+      *--------------------------------------------------------------*  00070004
+       ENVIRONMENT                         DIVISION.                    00080004
+      *--------------------------------------------------------------*  00090004
+       CONFIGURATION                       SECTION.                     00100004
+       SPECIAL-NAMES.                                                   00110004
+           DECIMAL-POINT IS COMMA.                                      00120004
+      *
+       INPUT-OUTPUT                        SECTION.                     00100004
+      *
+       FILE-CONTROL.
+           SELECT FUNCTRAB ASSIGN TO UT-S-FUNCTRAB
+           FILE STATUS IS FS-FUNCTRAB     
+           .
+           SELECT FUNCPAGT ASSIGN TO UT-S-FUNCPAGT
+           FILE STATUS IS FS-FUNCPAGT     
+           .
+      *--------------------------------------------------------------*  00130004
+       DATA                                DIVISION.                    00140004
+      *--------------------------------------------------------------*  00150004
+       FILE                                SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+       FD  FUNCTRAB
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 42 CHARACTERS
+           DATA RECORD IS REG-FUNCTRAB
+           .
+           COPY FUNCTRAB REPLACING ==::== BY ====.
+
+       FD  FUNCPAGT
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 61 CHARACTERS
+           DATA RECORD IS REG-FUNCPAGT
+           .
+           COPY FUNCPAGT REPLACING ==::== BY ====.
+      *--------------------------------------------------------------*  00210008
+       WORKING-STORAGE                     SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS ESPELHO DOS REGISTROS                              *
+      *--------------------------------------------------------------*  00210008
+           COPY FUNCTRAB REPLACING ==::== BY ==WS-==.
+           COPY FUNCPAGT REPLACING ==::== BY ==WS-==.
+      *
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*  00210008
+       77  FS-FUNCTRAB                     PIC X(02).                   00210108
+       77  FS-FUNCPAGT                     PIC X(02).                   00210108
+       77  FS-XXXXXXXX                     PIC X(02).                   00210108
+      *
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*  00210008
+       77  WS-MSG                          PIC X(60).                   00210208
+       77  WS-FS                           PIC X(02).
+       
+       77  WS-SALARIO-FUNC
+       77  WS-SALARIO-AUX
+       77  WS-SALARIO
+       01  WS-CTFILES.                                                  00210308
+           05  WS-CTLIDO                   PIC 9(04) COMP.              00210308
+           05  WS-CTGRAV                   PIC 9(04) COMP.              00210308
+       
+       01  WS-CTNUM.
+           05  WS-CONTNUM1                 PIC 9(04) COMP.
+           05  WS-CONTNUM2                 PIC 9(04) COMP.              00210308
+           05  WS-CONTNUM5                 PIC 9(04) COMP.              00210308
+           05  WS-CONTNUM10                PIC 9(04) COMP.              00210308
+           05  WS-CONTNUM20                PIC 9(04) COMP.              00210308
+           05  WS-CONTNUM50                PIC 9(04) COMP.              00210308
+           05  WS-CONTNUM100               PIC 9(04) COMP.              00210308
+           05  WS-CONTNUM200               PIC 9(04) COMP.              00210308
+      
+       01  WS-ACUMNUM.
+           05  WS-ACUMNUM1                 PIC 9(04) COMP.
+           05  WS-ACUMNUM2                 PIC 9(04) COMP.              00210308
+           05  WS-ACUMNUM5                 PIC 9(04) COMP.              00210308
+           05  WS-ACUMNUM10                PIC 9(04) COMP.              00210308
+           05  WS-ACUMNUM20                PIC 9(04) COMP.              00210308
+           05  WS-ACUMNUM50                PIC 9(04) COMP.              00210308
+           05  WS-ACUMNUM100               PIC 9(04) COMP.              00210308
+           05  WS-ACUMNUM200               PIC 9(04) COMP.              00210308
+       
+       77  WS-ACUMSALARIO                  PIC $$$.$$$.$$$.$$9.99.     
+       
+       01  WS-CTFILES-F.                                                00210308
+           05  WS-CTLIDO-F                 PIC ZZZ9.          
+           05  WS-CTGRAV-F                 PIC ZZZ9.
+
+       01  WS-ACUMNUM-F
+           05  WS-ACUMNUM1-F               PIC ZZ.ZZZ.ZZZ.
+           05  WS-ACUMNUM2-F               PIC ZZ.ZZZ.ZZZ.               00210308
+           05  WS-ACUMNUM5-F               PIC ZZ.ZZZ.ZZZ.               00210308
+           05  WS-ACUMNUM10-F              PIC ZZ.ZZZ.ZZZ.               00210308
+           05  WS-ACUMNUM20-F              PIC ZZ.ZZZ.ZZZ.               00210308
+           05  WS-ACUMNUM50-F              PIC ZZ.ZZZ.ZZZ.              00210308
+           05  WS-ACUMNUM100-F             PIC ZZ.ZZZ.ZZZ.              00210308
+           05  WS-ACUMNUM200-F             PIC ZZ.ZZZ.ZZZ.           
+       
+      *
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE MENSAGENS                                       *
+      *--------------------------------------------------------------*  00210008
+       77  WS-MSG01                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA FUNCTRAB '.
+       
+       77  WS-MSG02                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA FUNCPAGT '.
+
+       77  WS-MSG03                        PIC X(60)
+                                                   VALUE
+           'ERRO LEITURA FUNCTRAB '.
+
+       77  WS-MSG04                        PIC X(60)
+                                                   VALUE
+           'ERRO GRAVACAO FUNCPAGT '.
+           
+       77  WS-MSG05                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO FUNCTRAB '.
+       
+       77  WS-MSG06                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO FUNCPAGT '.
+      *--------------------------------------------------------------*  00211007
+       PROCEDURE                           DIVISION.                    00220004
+      *--------------------------------------------------------------*  00230004
+       0000-RFNNNP01.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR 
+                   UNTIL FS-FUNCTRAB = '10'
+           PERFORM 3000-TERMINO
+           GOBACK
+           .
+
+       1000-INICIALIZAR.
+           MOVE 0                          TO WS-CTFILES
+                                           TO WS-CTNUM
+                                           TO WS-ACUMNUM
+                                           TO WS-ACUMSALARIO
+           
+           OPEN INPUT FUNCTRAB
+
+           IF FS-FUNCTRAB NOT = '00'
+              MOVE WS-MSG01                TO WS-MSG
+              MOVE FS-FUNCTRAB             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+
+           OPEN OUTPUT FUNCPAGT
+
+           IF FS-FUNCPAGT NOT = '00'
+              MOVE WS-MSG02                TO WS-MSG
+              MOVE FS-FUNCPAGT             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+
+           PERFORM 1500-LER-FUNCTRAB
+           .
+      *    
+       1500-LER-FUNCTRAB.
+           READ FUNCTRAB INTO WS-REG-FUNCTRAB
+      *     
+           IF FS-FUNCTRAB = '00'
+               ADD 1                       TO WS-CTLIDO
+           ELSE
+               IF FS-FUNCTRAB = '10'
+                   MOVE WS-MSG03           TO WS-MSG
+                   MOVE FS-FUNCTRAB        TO WS-FS
+                   GO TO 9000-ERRO
+               END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           COMPUTE WS-SALARIO-FUNC = WS-QTDHORASFUNC * WS-SALHORAFUNC
+           ADD WS-SALARIOFUNC              TO WS-ACUMSALARIO
+           ADD 1                           TO WS-CTGRAV
+           MOVE WS-SALARIO-FUNC            TO WS-SALARIO-AUX
+
+           COMPUTE WS-CONTNUM200     = WS-SALARIO / 200
+           COMPUTE WS-SALARIO-AUX  = WS-SALARIO - WS-CONTNUM200 * 200
+
+           COMPUTE WS-CONTNUM100     = WS-SALARIO / 100
+           COMPUTE WS-SALARIO-AUX  = WS-SALARIO - WS-CONTNUM100 * 100
+
+           COMPUTE WS-CONTNUM50      = WS-SALARIO / 50
+           COMPUTE WS-SALARIO-AUX  = WS-SALARIO - WS-CONTNUM50 * 50
+
+           COMPUTE WS-CONTNUM20      = WS-SALARIO / 20
+           COMPUTE WS-SALARIO-AUX  = WS-SALARIO - WS-CONTNUM20 * 20
+
+           COMPUTE WS-CONTNUM10      = WS-SALARIO / 10
+           COMPUTE WS-SALARIO-AUX  = WS-SALARIO - WS-CONTNUM10 * 10
+
+           COMPUTE WS-CONTNUM5       = WS-SALARIO / 5
+           COMPUTE WS-SALARIO-AUX  = WS-SALARIO - WS-CONTNUM5 * 5
+
+           COMPUTE WS-CONTNUM2       = WS-SALARIO / 2
+           COMPUTE WS-SALARIO-AUX  = WS-SALARIO - WS-CONTNUM2 * 2
+
+           COMPUTE WS-CONTNUM1       = WS-SALARIO / 1
+           COMPUTE WS-SALARIO-AUX  = WS-SALARIO - WS-CONTNUM1 * 1
+
+           PERFORM 1500-LER-FUNCTRAB
+           .
+      *    MOVE PARA PAGT
+           MOVE WS-CODFUNC                 TO WS-CODFUNC-S
+           MOVE WS-NOMEFUNC                TO WS-NOMEFUNC-S
+           MOVE WS-SALARIO-FUNC            TO WS-SALARIOFUNC
+           MOVE WS-CONTNUM1                TO WS-NUMERARIO1   
+           MOVE WS-CONTNUM2                TO WS-NUMERARIO2   
+           MOVE WS-CONTNUM5                TO WS-NUMERARIO5   
+           MOVE WS-CONTNUM10               TO WS-NUMERARIO10  
+           MOVE WS-CONTNUM20               TO WS-NUMERARIO20  
+           MOVE WS-CONTNUM50               TO WS-NUMERARIO50  
+           MOVE WS-CONTNUM100              TO WS-NUMERARIO100 
+           MOVE WS-CONTNUM200              TO WS-NUMERARIO200 
+       
+       	   WRITE REG-FUNCPAG FROM WS-REG-FUNCPAGT
+
+           IF FS-FUNCPAGT NOT = '00'
+               MOVE WS-MSG04               TO WS-MSG
+               MOVE FS-FUNCPAGT            TO WS-FS
+       3000-TERMINO.
+           MOVE WS-CTLIDO                  TO WS-CTLIDO-F
+           MOVE WS-CTGRAV                  TO WS-CTGRAV-F
+
+           MOVE WS-ACUMNUM1                TO WS-ACUMNUM1-F
+           MOVE WS-ACUMNUM2                TO WS-ACUMNUM2-F
+           MOVE WS-ACUMNUM5                TO WS-ACUMNUM5-F
+           MOVE WS-ACUMNUM10               TO WS-ACUMNUM10-F
+           MOVE WS-ACUMNUM20               TO WS-ACUMNUM20-F
+           MOVE WS-ACUMNUM50               TO WS-ACUMNUM50-F
+           MOVE WS-ACUMNUM100              TO WS-ACUMNUM100-F
+           MOVE WS-ACUMNUM200              TO WS-ACUMNUM200-F
+           
+           MOVE WS-ACUMSALARIO             TO WS-ACUMSALARIO-F
+
+           DISPLAY '---------------------------------------------------'
+           DISPLAY 'TOTAL DE REGISTROS LIDOS.........' WS-CTLIDO-F
+           DISPLAY 'TOTAL DE REGISTROS GRAVADOS......' WS-CTGRAV-F
+           DISPLAY '---------------------------------------------------'
+           DISPLAY 'TOTAL DE MOEDAS DE R$ 1,00.......:' WS-ACUMNUM1-F
+           DISPLAY 'TOTAL DE NOTAS DE R$ 2,00........:' WS-ACUMNUM2-F
+           DISPLAY 'TOTAL DE NOTAS DE R$ 5,00........:' WS-ACUMNUM5-F
+           DISPLAY 'TOTAL DE NOTAS DE R$ 10,00.......:' WS-ACUMNUM10-F
+           DISPLAY 'TOTAL DE NOTAS DE R$ 20,00.......:' WS-ACUMNUM20-F
+           DISPLAY 'TOTAL DE NOTAS DE R$ 50,00.......:' WS-ACUMNUM50-F
+           DISPLAY 'TOTAL DE NOTAS DE R$ 100,00......:' WS-ACUMNUM100-F
+           DISPLAY 'TOTAL DE NOTAS DE R$ 200,00......:' WS-ACUMNUM200-F
+           DISPLAY '---------------------------------------------------'
+           DISPLAY 'TOTAL SALARIO PAGO EM R$:' WS-ACUMSALARIO-F
+           DISPLAY '---------------------------------------------------'
+
+
+           CLOSE FUNCTRAB
+           IF FS-FUNCTRAB NOT = '00'
+              MOVE WS-MSG05                TO WS-MSG
+              MOVE FS-FUNCTRAB             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+
+           CLOSE FUNCPAGT
+           IF FS-FUNCPAGT NOT = '00'
+              MOVE WS-MSG06                TO WS-MSG
+              MOVE FS-FUNCPAGT             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+           .
+
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL RFNNNP01              '
+           DISPLAY '=================================================='
+           .
+      *
+           COPY ROTERRO.  

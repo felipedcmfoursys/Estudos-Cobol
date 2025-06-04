@@ -1,0 +1,264 @@
+      *--------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *--------------------------------------------------------------*
+       PROGRAM-ID.                         RFNNNP03.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT CLIENTES ASSIGN TO UT-S-CLIENTES
+           FILE STATUS IS FS-CLIENTES
+           .
+
+           SELECT DEVEDOR ASSIGN TO UT-S-DEVEDOR
+           FILE STATUS IS FS-DEVEDOR
+           .
+
+           SELECT ATIVO ASSIGN TO UT-S-ATIVO
+           FILE STATUS IS FS-ATIVO
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  CLIENTES
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 46 CHARACTERS
+           DATA RECORD IS REG-CLIENTES
+           .
+           COPY CLIENTES.
+
+       FD  DEVEDOR
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 46 CHARACTERS
+           DATA RECORD IS REG-DEVEDOR
+           .
+           COPY DEVEDOR.
+
+       FD  ATIVO
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 46 CHARACTERS
+           DATA RECORD IS REG-ATIVO
+           .
+           COPY ATIVO.
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+      * VARIAVEIS ESPELHO DOS REGISTROS                              *
+      *--------------------------------------------------------------*
+      *    COPY xxxxxxxx REPLACING ==::== BY ==WS-==.
+      *    COPY XXXXXXXX REPLACING ==::== BY ==WS-==.
+      *    COPY XXXXXXXX REPLACING ==::== BY ==WS-==.
+      *
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       77  FS-CLIENTES                     PIC X(02).
+       77  FS-DEVEDOR                      PIC X(02).
+       77  FS-ATIVO                        PIC X(02).
+      *
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*
+       77  WS-MSG                          PIC X(60).
+       77  WS-FS                           PIC X(02).
+       77  WS-CONTLIDO                     PIC 9(04) COMP.
+       77  WS-CONTGRAV-D                   PIC 9(04) COMP.
+       77  WS-CONTGRAV-A                   PIC 9(04) COMP.
+       77  WS-CONTGRAV-TOTAL               PIC 9(04) COMP.
+
+      * 01  WS-REG-CLIENTE
+      *     05  WS-CPF                      PIC X(11).
+      *     05  WS-NOME                     PIC X(20).
+      *     05  WS-AGENCIA                  PIC X(11).
+      *     05  WS-SALDO                    PIC S9(05)V99 COMP-3.
+      *
+      *--------------------------------------------------------------*
+      * VARIAVEIS COM MASCARA DE EDICAO (FORMATADAS)                 *
+      *--------------------------------------------------------------*
+       77  WS-CONTLIDO-F                     PIC ZZZ9.
+       77  WS-CONTGRAV-D-F                   PIC ZZZ9.
+       77  WS-CONTGRAV-A-F                   PIC ZZZ9.
+       77  WS-CONTGRAV-TOTAL-F               PIC ZZZ9.
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE MENSAGENS                                       *
+      *--------------------------------------------------------------*
+       77  WS-MSG01                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA CLIENTES'.
+
+       77  WS-MSG02                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA DEVEDOR'.
+
+       77  WS-MSG03                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA ATIVO'.
+
+       77  WS-MSG04                        PIC X(60)
+                                                   VALUE
+           'ERRO LEITURA CLIENTES'.
+
+       77  WS-MSG05                        PIC X(60)
+                                                   VALUE
+           'ERRO GRAVACAO DEVEDOR'.
+
+       77  WS-MSG06                        PIC X(60)
+                                                   VALUE
+           'ERRO GRAVACAO ATIVO'.
+
+       77  WS-MSG07                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO CLIENTES'.
+
+       77  WS-MSG08                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO DEVEDORES'.
+
+       77  WS-MSG09                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO ATIVO'.
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+       0000-RFNNNP03.
+
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+                   UNTIL FS-CLIENTES = '10'
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+
+           MOVE 0                          TO WS-CONTLIDO
+                                              WS-CONTGRAV-D
+                                              WS-CONTGRAV-A
+
+           OPEN INPUT CLIENTES
+      *
+           IF FS-CLIENTES NOT = '00'
+              MOVE WS-MSG01                TO WS-MSG
+              MOVE FS-CLIENTES             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+      *
+           OPEN OUTPUT DEVEDOR
+      *
+           IF FS-DEVEDOR NOT = '00'
+              MOVE WS-MSG02                TO WS-MSG
+              MOVE FS-DEVEDOR              TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+
+           OPEN OUTPUT ATIVO
+      *
+           IF FS-ATIVO NOT = '00'
+              MOVE WS-MSG03                TO WS-MSG
+              MOVE FS-ATIVO                TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+      *
+           PERFORM 1500-LER-CLIENTES
+           .
+
+       1500-LER-CLIENTES.
+
+           READ CLIENTES
+      *
+           IF FS-CLIENTES = '00'
+              ADD 1 TO WS-CONTLIDO
+           ELSE
+              IF FS-CLIENTES NOT = '10'
+                 MOVE WS-MSG04             TO WS-MSG
+                 MOVE FS-CLIENTES          TO WS-FS
+                 GO TO 9000-ERRO
+              END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           IF SALDO < 0
+               MOVE REG-CLIENTE-E          TO REG-CLIENTE-D
+               WRITE REG-CLIENTE-D
+               IF FS-DEVEDOR NOT = '00'
+                  MOVE WS-MSG04            TO WS-MSG
+                  MOVE FS-DEVEDOR          TO WS-FS
+                  GO TO 9000-ERRO
+               END-IF
+               ADD 1                       TO WS-CONTGRAV-D
+           ELSE
+              IF SALDO >= 0
+              COMPUTE SALDO-A = SALDO-A + 50
+              MOVE REG-CLIENTE-E           TO REG-CLIENTE-A
+              WRITE REG-CLIENTE-A
+                 IF FS-ATIVO NOT = '00'
+                    MOVE WS-MSG04                TO WS-MSG
+                    MOVE FS-ATIVO                TO WS-FS
+                    GO TO 9000-ERRO
+                 END-IF
+              ADD 1                        TO WS-CONTGRAV-A
+              END-IF
+           END-IF
+
+           PERFORM 1500-LER-CLIENTES
+           .
+       3000-TERMINO.
+
+           MOVE WS-CONTGRAV-D              TO WS-CONTGRAV-D-F
+           MOVE WS-CONTGRAV-A              TO WS-CONTGRAV-A-F
+           COMPUTE WS-CONTGRAV-TOTAL = WS-CONTGRAV-D + WS-CONTGRAV-A
+           MOVE WS-CONTGRAV-TOTAL          TO WS-CONTGRAV-TOTAL-F
+
+           DISPLAY '=================================================='
+           DISPLAY 'TOTAL DE CLIENTES LIDOS.....: ' WS-CONTLIDO-F
+           DISPLAY 'TOTAL DE CLIENTES DEVEDORES.: ' WS-CONTGRAV-D-F
+           DISPLAY 'TOTAL DE CLIENTES ATIVOS....: ' WS-CONTGRAV-A-F
+           DISPLAY 'TOTAL DE CLIENTES...........: ' WS-CONTGRAV-TOTAL-F
+           DISPLAY '=================================================='
+
+           CLOSE CLIENTES
+
+           IF FS-CLIENTES NOT = '00'
+              MOVE WS-MSG07                TO WS-MSG
+              MOVE FS-CLIENTES             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+
+           CLOSE DEVEDOR
+
+           IF FS-DEVEDOR NOT = '00'
+              MOVE WS-MSG08                TO WS-MSG
+              MOVE FS-DEVEDOR              TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+
+           IF FS-ATIVO NOT = '00'
+              MOVE WS-MSG09                TO WS-MSG
+              MOVE FS-ATIVO                TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL RFNNNP03              '
+           DISPLAY '=================================================='
+           .
+      *
+           COPY ROTERRO.

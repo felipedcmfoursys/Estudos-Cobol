@@ -1,0 +1,357 @@
+      *--------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *-------------------------------------------------------------*
+       PROGRAM-ID.                         RLTRIO1.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT ESTOQUE ASSIGN TO UT-S-ESTOQUE
+           FILE STATUS IS FS-ESTOQUE
+           .
+
+           SELECT RELATO ASSIGN TO UT-S-RELATO
+           FILE STATUS IS FS-RELATO
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  ESTOQUE
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 45 CHARACTERS
+           DATA RECORD IS REG-ESTOQUE
+           .
+       01  REG-ESTOQUE.
+           COPY BKESTQ
+           .
+
+       FD  RELATO
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 80 CHARACTERS
+           DATA RECORD IS REG-RELATO
+           .
+       01  REG-RELATO                      PIC X(80).
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+       01  WS-CABEC1.
+           05 WS-DATA-CABEC1               PIC X(10).
+           05 FILLER                       PIC X(02)
+                                               VALUE SPACES.
+           05 WS-HORA-CABEC1               PIC X(08).
+           05 FILLER                       PIC X(02)
+                                               VALUE SPACES.
+           05 FILLER                       PIC X(46)
+                                               VALUE
+           "RELACAO DE PRODUTOS PARA REPOSICAO DE ESTOQUES".
+           05 FILLER                       PIC X(13)
+                                               VALUE
+           "        PAG. ".
+           05 WS-PAG-CABEC1                PIC Z9.
+
+       01  WS-CABEC2                       PIC X(90)
+                                                   VALUE ALL "-".
+       01  WS-CABEC3.
+           05 FILLER                       PIC X(43)
+                                                   VALUE
+           "  CODIGO      DESCRICAO                   Q".
+           05 FILLER                       PIC X(43)
+                                                   VALUE
+           "T.EST.    QT.MIN.    QT.REP.   ULT.PRECO   ".
+       01  WS-CABEC4.
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              " ------  ---------------------------   -".
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "------   -------   ------   ----------  ".
+       01  WS-LINDET.
+           05 FILLER                       PIC X(02)
+                                                   VALUE SPACES.
+           05 LD-CODPROD                   PIC 99.999.
+           05 FILLER                       PIC X(03)
+                                                   VALUE SPACES.
+           05 LD-DESCRICAO                 PIC X(25).
+           05 FILLER                       PIC X(05)
+                                                   VALUE SPACES.
+
+           05 LD-QTDEST                    PIC 999.
+           05 FILLER                       PIC X(07)
+                                                   VALUE SPACES.
+
+           05 LD-QTDMIN                    PIC 999.
+           05 FILLER                       PIC X(07)
+                                                   VALUE SPACES.
+
+           05 LD-QTDREP                    PIC 999.
+           05 FILLER                       PIC X(06)
+                                                   VALUE SPACES.
+
+           05 LD-PRECO                     PIC Z.ZZ9,99.
+           05 FILLER                       PIC X(02)
+                                                   VALUE SPACES.
+
+       01  WS-RODAPE1                      PIC X(80)
+                                                   VALUE ALL "-".
+       01  WS-RODAPE2.
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "          INDUSTRIAS CURURU LTDA.       ".
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "       SERVIMOS BEM PARA SERVIR SEMPRE  ".
+
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-RELATO                       PIC X(02).
+           88 SUCESSO-R                            VALUE '00'.
+           88 FIM-ARQ-R                            VALUE '10'.
+       01  FS-ESTOQUE                      PIC X(02).
+           88 SUCESSO-E                            VALUE '00'.
+           88 FIM-ARQ-E                            VALUE '10'.
+      *
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*
+       77  WS-MSG                          PIC X(60).
+       77  WS-FS                           PIC X(02).
+       77  WS-CTLIDO                       PIC 9(04).
+       77  WS-CTDESP                       PIC 9(04).
+       77  WS-CTIMP                        PIC 9(04).
+       77  WS-CTLIN                        PIC 9(04).
+       77  WS-CTPAG                        PIC 9(04).
+       77  WS-PULA                         PIC 9(04).
+       77  WS-QTDREP                       PIC 9(04).
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE DATA                                            *
+      *--------------------------------------------------------------*
+       01  WS-REG-ESTOQUE.
+           05 WS-CODPROD-E                 PIC 9(05).
+           05 WS-DESCRICAO-E               PIC X(25).
+           05 WS-QTDEST-E                  PIC 9(03).
+           05 WS-QTDMIN-E                  PIC 9(03).
+           05 WS-QTDMAX-E                  PIC 9(03).
+           05 WS-PRECO-E                   PIC 9(04)V99.
+
+       01  WS-DATA-SYS.
+           05 WS-ANO                       PIC 99.
+           05 WS-MES                       PIC 99.
+           05 WS-DIA                       PIC 99.
+
+       01 WS-HORA-SYS.
+           05 WS-HORA                      PIC 99.
+           05 WS-MINUTO                    PIC 99.
+           05 WS-SEGUNDO                   PIC 99.
+
+       01  WS-DATA-FORMATADA.
+           05 WS-DIA                       PIC 99.
+           05 FILLER                       PIC X(01) VALUE "/".
+
+           05 WS-MES                       PIC 99.
+           05 FILLER                       PIC X(02) VALUE "20".
+
+           05 WS-ANO                       PIC 99.
+
+       01  WS-HORA-FORMATADA.
+           05 WS-HORA                      PIC 99.
+           05 FILLER                       PIC X(01) VALUE ":".
+
+           05 WS-MINUTO                    PIC 99.
+           05 FILLER                       PIC X(01) VALUE "/".
+
+           05 WS-SEGUNDO                   PIC 99.
+
+
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+       0000-MAIN.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+               UNTIL FIM-ARQ-E
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           MOVE 0                           TO WS-CTLIDO
+           MOVE 0                           TO WS-CTDESP
+           MOVE 0                           TO WS-CTIMP
+           MOVE 99                          TO WS-CTLIN
+           MOVE 0                           TO WS-CTPAG
+
+           OPEN INPUT ESTOQUE
+
+           IF NOT SUCESSO-E
+               DISPLAY "ERRO ABERTURA ESTOQUE"
+               DISPLAY FS-ESTOQUE
+           END-IF
+
+           OPEN OUTPUT RELATO
+
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO ABERTURA RELATO"
+               DISPLAY FS-RELATO
+           END-IF
+
+           PERFORM 999-FORMATA-DATA-HORA
+           PERFORM 1500-LER-ESTOQUE
+           .
+       1500-LER-ESTOQUE.
+           READ ESTOQUE INTO WS-REG-ESTOQUE
+
+           IF SUCESSO-E
+               ADD 1                        TO WS-CTLIDO
+           ELSE
+               IF NOT SUCESSO-E
+                   DISPLAY "ERRO LEITURA ESTOQUE"
+                   DISPLAY FS-ESTOQUE
+               END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           IF WS-QTDEST-E < WS-QTDMIN-E
+               IF WS-CTLIN > 49
+                   PERFORM 2400-IMPRIME-CABECALHO
+               END-IF
+
+               PERFORM 2500-IMPRIME-DETALHE
+
+               IF WS-CTLIN = 48
+                   PERFORM 2600-IMPRIME-RODAPE
+               END-IF
+           ELSE
+               ADD 1                        TO WS-CTDESP
+           END-IF
+
+           PERFORM 1500-LER-ESTOQUE
+           .
+
+       2400-IMPRIME-CABECALHO.
+           MOVE WS-DATA-FORMATADA           TO WS-DATA-CABEC1
+           MOVE WS-HORA-FORMATADA           TO WS-HORA-CABEC1
+
+           ADD 1 TO WS-CTPAG
+
+           MOVE WS-CTPAG                    TO WS-PAG-CABEC1
+           WRITE REG-RELATO FROM WS-CABEC1 AFTER PAGE
+
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO WS-CABEC1"
+               DISPLAY FS-RELATO
+           END-IF
+
+           WRITE REG-RELATO FROM WS-CABEC2
+
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO CABEC2"
+               DISPLAY FS-RELATO
+           END-IF
+
+           WRITE REG-RELATO FROM WS-CABEC3
+
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO WS-CAVEC3"
+               DISPLAY FS-RELATO
+           END-IF
+
+           WRITE REG-RELATO FROM WS-CABEC4
+
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO WS-CAVEC4"
+               DISPLAY FS-RELATO
+           END-IF
+
+           MOVE 4                           TO WS-CTLIN
+           .
+
+       2500-IMPRIME-DETALHE.
+           MOVE WS-CODPROD-E                TO LD-CODPROD
+           MOVE WS-DESCRICAO-E              TO LD-DESCRICAO
+           MOVE WS-QTDEST-E                 TO LD-QTDEST
+           MOVE WS-QTDMIN-E                 TO LD-QTDMIN
+           COMPUTE WS-QTDREP = WS-QTDMAX-E - WS-QTDEST-E
+           MOVE WS-QTDREP                   TO LD-QTDREP
+           MOVE WS-PRECO-E                  TO LD-QTDREP
+
+           WRITE REG-RELATO FROM WS-LINDET
+
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO WS-LINDET"
+               DISPLAY FS-RELATO
+           END-IF
+
+           ADD 1 TO WS-CTIMP
+           ADD 1 TO WS-CTLIN
+           .
+       2600-IMPRIME-RODAPE.
+           COMPUTE WS-PULA = 49 - WS-CTLIN
+
+           WRITE REG-RELATO FROM WS-RODAPE1 AFTER WS-PULA LINES
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO WS-RODAPE1"
+               DISPLAY FS-RELATO
+           END-IF
+
+           WRITE REG-RELATO FROM WS-RODAPE2
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO IMPRESSAO WS-RODAPE2"
+               DISPLAY FS-RELATO
+           END-IF
+
+           MOVE 50 TO WS-CTLIN
+           .
+
+       3000-TERMINO.
+           IF WS-CTLIN < 50
+               PERFORM 2600-IMPRIME-RODAPE
+           END-IF
+
+           DISPLAY "TOTAL DE REGISTROS LIDOS........" WS-CTLIDO
+           DISPLAY "TOTAL DE REGISTROS IMPRESSOS...." WS-CTIMP
+           DISPLAY "TOTAL DE REGISTROS DESPREZADOS.." WS-CTDESP
+
+           CLOSE ESTOQUE
+           IF NOT SUCESSO-E
+               DISPLAY "ERRO FECHAMENTO ESTOQUE"
+               DISPLAY FS-ESTOQUE
+           END-IF
+
+           CLOSE RELATO
+           IF NOT SUCESSO-R
+               DISPLAY "ERRO FECHAMENTO RELATO"
+               DISPLAY FS-RELATO
+           END-IF
+
+
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL RLTRIO1              '
+           DISPLAY '=================================================='
+           .
+
+        999-FORMATA-DATA-HORA.
+           ACCEPT WS-DATA-SYS FROM DATE
+           ACCEPT WS-HORA-SYS FROM TIME
+
+           MOVE CORRESPONDING WS-DATA-SYS TO WS-DATA-FORMATADA
+           MOVE CORRESPONDING WS-HORA-SYS TO WS-HORA-FORMATADA
+           .
+

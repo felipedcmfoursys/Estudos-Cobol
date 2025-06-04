@@ -1,0 +1,199 @@
+       IDENTIFICATION                      DIVISION.
+      *----------------------------------------------------------------*
+       PROGRAM-ID                          EX008P13.
+       AUTHOR                              LUIS GUSTAVO.
+      *----------------------------------------------------------------*
+       ENVIRONMENT                        DIVISION.
+      *----------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+       FILE-CONTROL.
+           SELECT CLIENTES ASSIGN          TO UT-S-CLIENTES
+           FILE STATUS FS-CLIENTES
+           .
+           SELECT DEVEDOR ASSIGN           TO UT-S-DEVEDOR
+           FILE STATUS FS-DEVEDOR
+           .
+           SELECT ATIVO ASSIGN             TO UT-S-ATIVO
+           FILE STATUS FS-ATIVO
+           .
+      *----------------------------------------------------------------*
+       DATA                                DIVISION.
+      *----------------------------------------------------------------*
+       FILE                                SECTION.
+      *----------------------------------------------------------------*
+       FD  CLIENTES
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 46 CHARACTERS
+           DATA RECORD IS FD-CLIENTES
+           .
+       01  FD-CLIENTES PIC X(46).
+
+      *----------------------------------------------------------------*
+       FD  DEVEDOR
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 46 CHARACTERS
+           DATA RECORD IS FD-DEVEDOR
+           .
+       01  FD-DEVEDOR PIC X(46).
+      *----------------------------------------------------------------*
+       FD  ATIVO
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 46 CHARACTERS
+           DATA RECORD IS FD-ATIVO
+           .
+       01  FD-ATIVO PIC X(46).
+       WORKING-STORAGE                     SECTION.
+      *----------------------------------------------------------------*
+      *  DECLARACAO DE VARIAVEIS
+      *----------------------------------------------------------------*
+       COPY CLIENTES.
+       COPY DEVEDOR.
+       COPY ATIVO.
+       77  FS-CLIENTES                     PIC X(02).
+       77  FS-DEVEDOR                      PIC X(02).
+       77  FS-ATIVO                        PIC X(02).
+      *----------------------------------------------------------------*
+       77  WS-MSG                          PIC X(60).
+       77  WS-FS                           PIC X(02).
+       77  WS-CTLIDO-CLI                   PIC 9(04) COMP.
+       77  WS-CTGRAV-DEV                   PIC 9(04) COMP.
+       77  WS-CTGRAV-ATV                   PIC 9(04) COMP.
+      *----------------------------------------------------------------*
+       77  WS-MSG01                        PIC X(60)
+           VALUE "ERRO ABERTURA CLIENTES".
+       77  WS-MSG02                        PIC X(60)
+           VALUE "ERRO ABERTURA DEVEDOR".
+       77  WS-MSG03                        PIC X(60)
+           VALUE "ERRO ABERTURA ATIVO".
+       77  WS-MSG04                        PIC X(60)
+           VALUE "ERRO LEITURA CLIENTES".
+       77  WS-MSG05                        PIC X(60)
+           VALUE "ERRO GRAVACAO DEVEDOR".
+       77  WS-MSG06                        PIC X(60)
+           VALUE "ERRO GRAVACAO ATIVO".
+       77  WS-MSG07                        PIC X(60)
+           VALUE "ERRO FECHAMENTO CLIENTES".
+       77  WS-MSG08                        PIC X(60)
+           VALUE "ERRO FECHAMENTO DEVEDOR".
+       77  WS-MSG09                        PIC X(60)
+           VALUE "ERRO FECHAMENTO ATIVO".
+      *----------------------------------------------------------------*
+      * VARIAVEIS DE TEMPO DE PROCESSAMENTO
+      *----------------------------------------------------------------*
+      *----------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *----------------------------------------------------------------*
+       0000-EX011P12.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+                   UNTIL FS-CLIENTES = "10"
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+       1000-INICIALIZAR.
+           MOVE 0                          TO WS-CTLIDO-CLI
+           MOVE 0                          TO WS-CTGRAV-DEV
+           MOVE 0                          TO WS-CTGRAV-ATV
+           OPEN INPUT CLIENTES
+           IF FS-CLIENTES NOT = "00"
+              MOVE WS-MSG01                TO WS-MSG
+              MOVE FS-CLIENTES             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+           OPEN OUTPUT DEVEDOR
+           IF FS-DEVEDOR NOT = "00"
+              MOVE WS-MSG02                TO WS-MSG
+              MOVE FS-DEVEDOR              TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+           OPEN OUTPUT ATIVO
+           IF FS-ATIVO NOT = "00"
+              MOVE WS-MSG03                TO WS-MSG
+              MOVE FS-ATIVO                TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+           PERFORM 1100-LER-CLIENTES
+           .
+
+       1100-LER-CLIENTES.
+           READ CLIENTES INTO REG-CLIENTES
+           IF FS-CLIENTES = "00"
+              COMPUTE WS-CTLIDO-CLI = WS-CTLIDO-CLI + 1
+           ELSE
+              IF FS-CLIENTES = "10"
+                 CONTINUE
+              ELSE
+                 MOVE WS-MSG04             TO WS-MSG
+                 MOVE FS-CLIENTES          TO WS-FS
+                 GO TO 9000-ERRO
+              END-IF
+           END-IF
+           .
+       2000-PROCESSAR.
+           IF CLIENTES-SALDO >= 0
+              COMPUTE CLIENTES-SALDO = CLIENTES-SALDO + 50
+              MOVE REG-CLIENTES            TO REG-ATIVO
+              PERFORM 2100-GRAVAR-ATIVO
+           END-IF
+           IF CLIENTES-SALDO < 0
+              MOVE REG-CLIENTES            TO REG-DEVEDOR
+              PERFORM 2200-GRAVAR-DEVEDOR
+           END-IF
+              PERFORM 1100-LER-CLIENTES
+           .
+       2100-GRAVAR-ATIVO.
+              WRITE FD-ATIVO FROM REG-ATIVO
+      *
+           IF FS-ATIVO = "00"
+              CONTINUE
+
+           ELSE
+              MOVE WS-MSG06                TO WS-MSG
+              MOVE FS-ATIVO                TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+           .
+       2200-GRAVAR-DEVEDOR.
+              WRITE FD-DEVEDOR FROM REG-DEVEDOR
+      *
+           IF FS-DEVEDOR = "00"
+              CONTINUE
+           ELSE
+               MOVE WS-MSG07                TO WS-MSG
+               MOVE FS-DEVEDOR              TO WS-FS
+               GO TO 9000-ERRO
+           END-IF
+           .
+       3000-TERMINO.
+           CLOSE CLIENTES
+           IF FS-CLIENTES NOT = "00"
+              MOVE WS-MSG07 TO WS-MSG
+              MOVE FS-CLIENTES             TO WS-FS
+              GO TO 9000-ERRO
+      *
+           CLOSE DEVEDOR
+           IF FS-DEVEDOR NOT = "00"
+              MOVE WS-MSG08                TO WS-MSG
+              MOVE FS-DEVEDOR              TO WS-FS
+              GO TO 9000-ERRO
+      *
+           CLOSE ATIVO
+           IF FS-ATIVO   NOT = "00"
+              MOVE WS-MSG09                TO WS-MSG
+              MOVE FS-ATIVO                TO WS-FS
+              GO TO 9000-ERRO
+           .
+      *
+      *
+           .
+           COPY ROTERRO.

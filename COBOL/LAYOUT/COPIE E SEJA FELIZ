@@ -1,0 +1,105 @@
+      *--------------------------------------------------------------*  
+       IDENTIFICATION                      DIVISION.                    
+      *--------------------------------------------------------------*  
+       PROGRAM-ID.                         XXXXXXXX.                    
+       AUTHOR.                             FELIPE.                      
+      *                                                                 
+      *--------------------------------------------------------------*  
+       ENVIRONMENT                         DIVISION.                    
+      *--------------------------------------------------------------*  
+       CONFIGURATION                       SECTION.                     
+       SPECIAL-NAMES.                                                   
+           DECIMAL-POINT IS COMMA.                                      
+      *
+       INPUT-OUTPUT                        SECTION.                     
+      *
+       FILE-CONTROL.
+           SELECT XXXXXXX ASSIGN TO UT-S-XXXXXXX
+           FILE STATUS IS FS-XXXXXXX      
+           .
+      *--------------------------------------------------------------*  
+       DATA                                DIVISION.                    
+      *--------------------------------------------------------------*  
+       FILE                                SECTION.                     
+      *--------------------------------------------------------------*  
+       FD  XXXXXXXX
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS XX CHARACTERS
+           DATA RECORD IS REG-XXXXXXX
+           .
+           COPY XXXXXXXX REPLACING ==::== BY ====.
+
+       FD  XXXXXXXX
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS XX CHARACTERS
+           DATA RECORD IS REG-XXXXXXX
+           .
+           COPY XXXXXXXX REPLACING ==::== BY ====.
+      *--------------------------------------------------------------*  
+       WORKING-STORAGE                     SECTION.                    
+      *--------------------------------------------------------------*  
+      * VARIAVEIS ESPELHO DOS REGISTROS                              *
+      *--------------------------------------------------------------*  
+           COPY xxxxxxxx REPLACING ==::== BY ==WS-==.
+           COPY XXXXXXXX REPLACING ==::== BY ==WS-==.
+           COPY XXXXXXXX REPLACING ==::== BY ==WS-==.
+      *
+      *--------------------------------------------------------------*  
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*  
+       77  FS-XXXXXXXX                     PIC X(02).                   
+       77  FS-XXXXXXXX                     PIC X(02).                   
+       77  FS-XXXXXXXX                     PIC X(02).                   
+      *
+      *--------------------------------------------------------------*  
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*  
+       77  WS-MSG                          PIC X(60).                   
+       77  WS-FS                           PIC X(02).                   
+       77  WS-CTLIDO                       PIC 9(04) COMP.              
+       77  WS-CTGRAV                       PIC 9(04) COMP.              
+      *--------------------------------------------------------------*
+      * VARIAVEIS COM MASCARA DE EDICAO (FORMATADAS)                 *
+      *--------------------------------------------------------------*
+       77  WS-CTLIDO-F                     PIC ZZZ9.                   
+       77  WS-CTGRAV-F                     PIC ZZZ9.
+      *
+      *--------------------------------------------------------------*  
+      * VARIAVEIS DE MENSAGENS                                       *
+      *--------------------------------------------------------------*  
+       77  WS-MSG01                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA  '.
+
+       77  WS-MSG02                        PIC X(60)
+                                                   VALUE
+           'ERRO LEITURA  '.
+
+       77  WS-MSG03                        PIC X(60)
+                                                   VALUE
+           'ERRO GRAVACAO  '.
+
+       77  WS-MSG04                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO  '.
+      *--------------------------------------------------------------*  
+       PROCEDURE                           DIVISION.                    
+      *--------------------------------------------------------------*  
+       0000-XXXXXXXX.
+
+       1000-XXXXXXXX.
+
+       2000-XXXXXXXX.
+
+       3000-XXXXXXXX.
+
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL XXXXXXXX              '
+           DISPLAY '=================================================='
+           .
+      *
+           COPY ROTERRO.

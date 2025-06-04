@@ -1,0 +1,426 @@
+      *--------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *--------------------------------------------------------------*
+       PROGRAM-ID.                         EXEMANUT.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT MOVCLIDB ASSIGN TO UT-S-MOVCLIDB
+           FILE STATUS IS FS-MOVCLIDB
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  MOVCLIDB
+           RECORDING MODE IS F.
+
+           COPY BKEXEMC REPLACING ==::== BY ====.
+
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+      * VARIAVEIS ESPELHO DOS REGISTROS                              *
+      *--------------------------------------------------------------*
+           COPY BKEXEMC REPLACING ==::== BY ==WS-==.
+
+           COPY VARDATA.
+           COPY VARTIME.
+
+      *    BOOK DAS VARIAVEIS HOSPEDEIRAS
+           EXEC SQL
+               INCLUDE BKEXETC
+           END-EXEC
+           .
+      *    INDICADORES DA TABELA TBCLIENTE
+
+       01  INDICADORES.
+           05 ICODCLI                       PIC S9(04) COMP.
+           05 INOMECLI                      PIC S9(04) COMP.
+           05 IENDCLI                       PIC S9(04) COMP.
+           05 IFONECLI                      PIC S9(04) COMP.
+           05 IEMAILCLI                     PIC S9(04) COMP.
+           05 ICPFCLI                       PIC S9(04) COMP.
+           05 ISALDOCLI                     PIC S9(04) COMP.
+
+      *    BOOK DAS VARIAVEIS PARA USO DO SQL
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC
+
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-MOVCLIDB                     PIC X(02).
+           88 SUCESSO-MOV                          VALUE "00".
+           88 FIM-ARQ-MOV                          VALUE "10".
+
+       77  WS-SQLCODE                      PIC +9(9).
+       77  WS-SALDOCLI-F                   PIC ZZ.ZZ9,99.
+      *
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*
+       01  WS-CONTADORES-COMP.
+           05  WS-CTLIDO                   PIC 9(05) COMP.
+           05  WS-CTINS                    PIC 9(05) COMP.
+           05  WS-CTEXC                    PIC 9(05) COMP.
+           05  WS-CTINV                    PIC 9(05) COMP.
+           05  WS-CTALT                    PIC 9(05) COMP.
+           05  WS-CTCON                    PIC 9(05) COMP.
+      *--------------------------------------------------------------*
+      * VARIAVEIS COM MASCARA DE EDICAO (FORMATADAS)                 *
+      *--------------------------------------------------------------*
+       01  WS-CONTADORES-COMP-F.
+           05  WS-CTLIDO-F                     PIC ZZZ9.
+           05  WS-CTINS-F                      PIC ZZZ9.
+           05  WS-CTEXC-F                      PIC ZZZ9.
+           05  WS-CTINV-F                      PIC ZZZ9.
+           05  WS-CTALT-F                      PIC ZZZ9.
+           05  WS-CTCON-F                      PIC ZZZ9.
+      *
+      *--------------------------------------------------------------*
+
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+       0000-EXEMANUT.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR UNTIL FIM-ARQ-MOV
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           ACCEPT WS-HORARIO-INICIAL FROM TIME
+
+           INITIALIZE WS-CONTADORES-COMP
+
+           OPEN INPUT MOVCLIDB
+           IF NOT SUCESSO-MOV
+               DISPLAY "DEU RUIM PA ABRIR O MOVCLIDB FIO"
+               DISPLAY FS-MOVCLIDB
+               GO TO 9000-ERRO
+           END-IF
+
+           PERFORM 1500-LER-MOVCLIDB
+           .
+
+       1500-LER-MOVCLIDB.
+           READ MOVCLIDB INTO WS-REG-MOVCLIDB
+           IF SUCESSO-MOV
+               ADD 1                         TO WS-CTLIDO
+           ELSE
+               IF NOT FIM-ARQ-MOV
+                   DISPLAY "DEU RUIM PA LER O MOVCLIDB FIO"
+                   DISPLAY FS-MOVCLIDB
+                   GO TO 9000-ERRO
+               END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           EVALUATE WS-TIPOMOV-DB
+               WHEN "I" PERFORM 2100-INCLUSAO
+               WHEN "E" PERFORM 2200-EXCLUSAO
+               WHEN "A" PERFORM 2300-ALTERACAO
+               WHEN "C" PERFORM 2400-CONSULTAR
+               WHEN OTHER
+                   ADD 1 TO WS-CTINV
+           END-EVALUATE
+
+           PERFORM 1500-LER-MOVCLIDB
+           .
+      *----------------------------------------------------------------*
+      *    MOVER DADOS DA VARIAVELS ESPELHO PARA HOSPEDEIRA            *
+      *----------------------------------------------------------------*
+       2100-INCLUSAO.
+           MOVE WS-CODCLI-DB                 TO CODCLI
+           MOVE +30                          TO NOMECLI-LEN
+           MOVE WS-NOMECLI-DB                TO NOMECLI-TEXT
+           MOVE +40                          TO ENDCLI-LEN
+           MOVE WS-ENDCLI-DB                 TO ENDCLI-TEXT
+           MOVE WS-FONECLI-DB                TO FONECLI
+           MOVE +50                          TO EMAILCLI-LEN
+           MOVE WS-EMAILCLI-DB               TO EMAILCLI-TEXT
+           MOVE WS-CPFCLI-DB                 TO CPFCLI
+           MOVE WS-SALDOCLI-DB               TO SALDOCLI
+
+      *----------------------------------------------------------------*
+      *    INSERIR OS DADOS DA HOSPEDEIRA NA TABELA(SQL FIELDS)        *
+      *----------------------------------------------------------------*
+           EXEC SQL
+               INSERT INTO TBCLIENTE
+               (   CODCLI,
+                   NOMECLI,
+                   ENDCLI,
+                   FONECLI,
+                   EMAILCLI,
+                   CPFCLI,
+                   SALDOCLI
+               )
+               VALUES
+               (   :CODCLI,
+                   :NOMECLI,
+                   :ENDCLI,
+                   :FONECLI,
+                   :EMAILCLI,
+                   :CPFCLI,
+                   :SALDOCLI
+               )
+           END-EXEC
+
+      *----------------------------------------------------------------*
+      *    TESTAR SQLCODE                                              *
+      *----------------------------------------------------------------*
+           EVALUATE SQLCODE
+           WHEN 0
+               ADD 1 TO WS-CTINS
+           WHEN -803
+               ADD 1 TO WS-CTINV
+           WHEN -545
+               ADD 1 TO WS-CTINV
+           WHEN OTHER
+               DISPLAY "ERRO INSERT TBCLIENTE"
+               DISPLAY SQLCODE
+               GO TO 9000-ERRO-DB2
+           END-EVALUATE
+
+           PERFORM 1500-LER-MOVCLIDB
+           .
+
+       2200-EXCLUSAO.
+           MOVE WS-CODCLI-DB                  TO CODCLI
+
+           EXEC SQL
+               DELETE FROM TBCLIENTE
+               WHERE CODCLI = :CODCLI
+           END-EXEC
+
+           EVALUATE SQLCODE
+               WHEN 0    ADD 1 TO WS-CTEXC
+               WHEN +100 ADD 1 TO WS-CTINV
+               WHEN OTHER
+                   DISPLAY "ERRO DELETE NA TBCLINTE"
+                   DISPLAY SQLCODE
+                   PERFORM 9000-ERRO-DB2
+           END-EVALUATE
+           .
+
+       2300-ALTERACAO.
+           MOVE WS-CODCLI-DB                  TO CODCLI
+
+           EXEC SQL
+               SELECT
+                   CODCLI,
+                   NOMECLI,
+                   ENDCLI,
+                   FONECLI,
+                   EMAILCLI,
+                   CPFCLI,
+                   SALDOCLI
+
+               INTO :CODCLI,
+                    :NOMECLI,
+                    :ENDCLI   :IENDCLI,
+                    :FONECLI  :IFONECLI,
+                    :EMAILCLI :IEMAILCLI,
+                    :CPFCLI   :ICPFCLI,
+                    :SALDOCLI :ISALDOCLI
+               FROM TBCLIENTE
+               WHERE CODCLI = :CODCLI
+           END-EXEC
+
+           EVALUATE SQLCODE
+               WHEN 0
+                   PERFORM 9000-TRATA-INDICATOR
+                   PERFORM 2310-UPDATE
+               WHEN +100
+                   ADD 1 TO WS-CTINV
+               WHEN OTHER
+                   DISPLAY "ERRO SELECT DO UPDATE 2300"
+                   DISPLAY SQLCODE
+                   PERFORM 9000-ERRO-DB2
+           END-EVALUATE
+           .
+
+       2310-UPDATE.
+      *    TESTE DA VARIAVEL ESPELHO
+           IF WS-NOMECLI-DB  NOT = SPACES
+               MOVE +30                       TO NOMECLI-LEN
+               MOVE WS-NOMECLI-DB             TO NOMECLI-TEXT
+           END-IF
+
+           IF WS-ENDCLI-DB   NOT = SPACES
+               MOVE +40                       TO ENDCLI-LEN
+               MOVE WS-ENDCLI-DB              TO ENDCLI-TEXT
+           END-IF
+
+           IF WS-EMAILCLI-DB NOT = SPACES
+               MOVE +50                       TO EMAILCLI-LEN
+               MOVE WS-EMAILCLI-DB            TO EMAILCLI-TEXT
+           END-IF
+
+           IF WS-CPFCLI-DB   NOT = SPACES
+               MOVE WS-CPFCLI-DB              TO CPFCLI
+           END-IF
+
+           IF WS-SALDOCLI-DB NOT = ZEROS
+               MOVE WS-SALDOCLI-DB            TO SALDOCLI
+           END-IF
+
+           EXEC SQL
+               UPDATE TBCLIENTE
+               SET NOMECLI     = :NOMECLI,
+                   ENDCLI      = :ENDCLI,
+                   FONECLI     = :FONECLI,
+                   EMAILCLI    = :EMAILCLI,
+                   CPFCLI      = :CPFCLI,
+                   SALDOCLI    = :SALDOCLI
+           WHERE CODCLI        = :CODCLI
+           END-EXEC
+
+           EVALUATE SQLCODE
+               WHEN 0      ADD 1 TO WS-CTALT
+               WHEN +100   ADD 1 TO WS-CTINV
+               WHEN -545   ADD 1 TO WS-CTINV
+               WHEN OTHER
+                   DISPLAY "ERRO UPDATE TABELA 2310"
+                   DISPLAY SQLCODE
+                   PERFORM 9000-ERRO-DB2
+           END-EVALUATE
+           .
+
+       2400-CONSULTAR.
+           MOVE WS-CODCLI-DB                  TO CODCLI
+
+           EXEC SQL
+               SELECT CODCLI,
+                      NOMECLI,
+                      ENDCLI,
+                      FONECLI,
+                      EMAILCLI,
+                      CPFCLI,
+                      SALDOCLI
+               INTO :CODCLI,
+                    :NOMECLI,
+                    :ENDCLI   :IENDCLI,
+                    :FONECLI  :IFONECLI,
+                    :EMAILCLI :IEMAILCLI,
+                    :CPFCLI   :ICPFCLI,
+                    :SALDOCLI :ISALDOCLI
+               FROM TBCLIENTE
+               WHERE CODCLI = :CODCLI
+           END-EXEC
+
+           EVALUATE SQLCODE
+               WHEN 0 ADD 1 TO WS-CTCON
+                   PERFORM 9000-TRATA-INDICATOR
+                   PERFORM 9000-EXIBE-CONSULTA
+               WHEN +100 ADD 1 TO WS-CTINV
+               WHEN OTHER
+                   DISPLAY "ERRO CONSULTA TBCLIENTE 2400"
+                   DISPLAY SQLCODE
+                   PERFORM 9000-ERRO-DB2
+           END-EVALUATE
+           .
+
+       3000-TERMINO.
+           CLOSE MOVCLIDB
+           IF NOT SUCESSO-MOV
+               DISPLAY "DEU POBREMA NO FECHAMENTO PARCEIRO"
+               DISPLAY FS-MOVCLIDB
+               GO TO 9000-ERRO
+           END-IF
+
+           ACCEPT WS-HORARIO-FINAL FROM TIME
+
+           PERFORM 9000-CALCULA-TEMPO-PROC
+
+           MOVE WS-CTLIDO                     TO WS-CTLIDO-F
+           MOVE WS-CTINS                      TO WS-CTINS-F
+           MOVE WS-CTEXC                      TO WS-CTEXC-F
+           MOVE WS-CTINV                      TO WS-CTINV-F
+
+           PERFORM 9000-IMPRIME-DATA
+
+
+           DISPLAY '=================================================='
+           DISPLAY '        ESTATISCA FINAL DE PROCESSAMENTO          '
+           DISPLAY '=================================================='
+           DISPLAY 'QTDE. CLIENTES LIDOS CADCLI.........: ' WS-CTLIDO-F
+           DISPLAY 'QTDE. CLIENTES INSERIDOS TBCLIENTE..: ' WS-CTINS-F
+           DISPLAY 'QTDE. CLIENTES EXCLUIDOS TBCLIENTE..: ' WS-CTEXC-F
+           DISPLAY 'QTDE. CLIENTES ALTERADOS TBCLIENTE..: ' WS-CTALT-F
+           DISPLAY 'QTDE. CLIENTES CONSULTADOS..........: ' WS-CTCON-F
+           DISPLAY 'QTDE. MOVIMENTOS INVALIDOS..........: ' WS-CTINV-F
+           DISPLAY '=================================================='
+           DISPLAY 'TEMPO TOTAL DE PROCESSAMENTO...'
+           DISPLAY WS-TEMPO-PROCESSAMENTO
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL EXEMANUT              '
+           DISPLAY '=================================================='
+           .
+      *
+       9000-TRATA-INDICATOR.
+           IF IENDCLI LESS ZERO
+               MOVE SPACES                     TO ENDCLI
+           END-IF
+
+           IF IFONECLI LESS ZERO
+               MOVE SPACES                     TO FONECLI
+           END-IF
+
+           IF IEMAILCLI LESS ZERO
+               MOVE SPACES                     TO EMAILCLI
+           END-IF
+
+           IF ICPFCLI LESS ZERO
+               MOVE SPACES                     TO CPFCLI
+           END-IF
+
+           IF ISALDOCLI LESS ZERO
+               MOVE ZEROS                      TO SALDOCLI
+           END-IF
+           .
+       9000-EXIBE-CONSULTA.
+           MOVE SALDOCLI                       TO WS-SALDOCLI-F
+           DISPLAY "=================================================="
+           DISPLAY '==             CONSULTA DE CLIENTE              =='
+           DISPLAY "=================================================="
+           DISPLAY 'CODIGO....' CODCLI
+           DISPLAY 'NOME......' NOMECLI-TEXT
+           DISPLAY 'ENDERECO..' ENDCLI-TEXT
+           DISPLAY 'TELEFONE..' FONECLI
+           DISPLAY 'EMAIL.....' EMAILCLI-TEXT
+           DISPLAY 'CPF.......' CPFCLI
+           DISPLAY 'SALDO..... R$ ' WS-SALDOCLI-F
+           DISPLAY "=================================================="
+           .
+       9000-ERRO-DB2.
+           DISPLAY '=================================================='
+           DISPLAY 'CODIGO...: ' WS-SQLCODE
+           DISPLAY '=================================================='
+           .
+
+       9000-ERRO.
+           DISPLAY '=================================================='
+           DISPLAY '==         ERMINO ANORMAL DO EXECARGA2          =='
+           DISPLAY '=================================================='
+           STOP RUN
+           .
+
+           COPY ROTDATA.
+           COPY ROTPROC.
+

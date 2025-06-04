@@ -1,0 +1,245 @@
+      *--------------------------------------------------------------*  00010004
+       IDENTIFICATION                      DIVISION.                    00020004
+      *--------------------------------------------------------------*  00030004
+       PROGRAM-ID.                         P112NX02.                    00040008
+       AUTHOR.                             NELSON.                      00050008
+      *                                                                 00060004
+      *--------------------------------------------------------------*  00070004
+       ENVIRONMENT                         DIVISION.                    00080004
+      *--------------------------------------------------------------*  00090004
+       CONFIGURATION                       SECTION.                     00100004
+       SPECIAL-NAMES.                                                   00110004
+           DECIMAL-POINT IS COMMA.                                      00120004
+      *
+       INPUT-OUTPUT                        SECTION.
+       FILE-CONTROL.
+           SELECT EXTTD024 ASSIGN          TO UT-S-EXTTD024
+           FILE STATUS IS FS-EXTTD024
+           .
+           SELECT EXTTA024 ASSIGN          TO UT-S-EXTTA024
+           FILE STATUS IS FS-EXTTA024
+           .
+      *--------------------------------------------------------------*  00130004
+       DATA                                DIVISION.                    00140004
+      *--------------------------------------------------------------*  00150004
+       FILE                                SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+       FD  EXTTD024
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTD024
+           .
+       01  FD-EXTTD024                     PIC X(44).
+
+       FD  EXTTA024
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTA024
+           .
+       01  FD-EXTTA024                     PIC X(44).
+
+      *--------------------------------------------------------------*  00210008
+       WORKING-STORAGE                     SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+      * DECLARACAO DAS VARIAVEIS ESPELHO DOS ARQUIVOS
+      *--------------------------------------------------------------*  00210008
+           COPY B112D024.
+           COPY B112A024.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE FILE STATUS
+      *--------------------------------------------------------------*  00210008
+           COPY VARERRO.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE FILE STATUS
+      *--------------------------------------------------------------*  00210008
+       01  FS-EXTTD024                     PIC X(02).
+           88 SUCESSO-D024                         VALUE '00'.
+           88 FIM-ARQ-D024                         VALUE '10'.
+
+       01  FS-EXTTA024                     PIC X(02).
+           88 SUCESSO-A024                         VALUE '00'.
+           88 FIM-ARQ-A024                         VALUE '10'.
+
+      *--------------------------------------------------------------*  00210008
+      * COLOCAR AS MENSAGEMS EM VARIAVEIS EH UMA BOA PRATICA
+      *--------------------------------------------------------------*  00210008
+       77  WS-MSG01                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA EXTTD024'.
+       77  WS-MSG02                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA EXTTA024'.
+       77  WS-MSG03                        PIC X(60)
+                                                   VALUE
+           'ERRO LEITURA EXTTD024'.
+       77  WS-MSG04                        PIC X(60)
+                                                   VALUE
+           'ERRO GRAVACAO EXTTA024'.
+       77  WS-MSG05                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO EXTTD024'.
+       77  WS-MSG06                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO EXTTA024'.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE TRABALHO
+      *--------------------------------------------------------------*  00210008
+       77  WS-CTLIDO                       PIC 9(04)
+                                                   COMP.
+       77  WS-CTGRAV                       PIC 9(04)
+                                                   COMP.
+       77  WS-CPF-AUX                      PIC X(11).
+
+       77  WS-SALDO-AUX                    PIC S9(11)V99
+                                                   COMP.
+       77  WS-NOME-AUX                     PIC X(16).
+
+       01  WS-DATA-SISTEMA.
+           05 WS-ANO                       PIC X(02).
+           05 WS-MES                       PIC X(02).
+           05 WS-DIA                       PIC X(02).
+
+       01  WS-DATA-PROCESSAMENTO.
+           05 WS-DIA                       PIC X(02).
+           05 FILLER                       PIC X(01)
+                                                   VALUE '/'.
+           05 WS-MES                       PIC X(02).
+           05 FILLER                       PIC X(03)
+                                                   VALUE '/20'.
+           05 WS-ANO                       PIC X(02).
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS COM MASCARA DE EDICAO (FORMATADAS)
+      *--------------------------------------------------------------*  00210008
+       77  WS-CTLIDO-F                     PIC ZZZ9.                    00210208
+       77  WS-CTGRAV-F                     PIC ZZZ9.                    00210308
+      *--------------------------------------------------------------*  00211007
+       PROCEDURE                           DIVISION.                    00220004
+      *--------------------------------------------------------------*  00230004
+       0000-MAIN.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+                   UNTIL FIM-ARQ-D024
+           PERFORM 3000-TERMINO
+           GOBACK
+           .
+      *
+       1000-INICIALIZAR.
+           ACCEPT WS-DATA-SISTEMA FROM DATE
+
+           MOVE CORR WS-DATA-SISTEMA       TO WS-DATA-PROCESSAMENTO
+
+           MOVE 0                          TO WS-CTLIDO
+           MOVE 0                          TO WS-CTGRAV
+           MOVE 0                          TO WS-SALDO-AUX
+      *
+           OPEN INPUT EXTTD024
+      *
+           IF NOT SUCESSO-D024
+              MOVE WS-MSG01                TO WS-MSG
+              MOVE FS-EXTTD024             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+           OPEN OUTPUT EXTTA024
+
+           IF NOT SUCESSO-A024
+              MOVE WS-MSG03                TO WS-MSG
+              MOVE FS-EXTTA024             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           PERFORM 1500-LER-EXTTD024
+      *
+           MOVE B112D024-CPF               TO WS-CPF-AUX
+           MOVE B112D024-NOME              TO WS-NOME-AUX
+           .
+      *
+       1500-LER-EXTTD024.
+           READ EXTTD024 INTO REG-EXTTD024
+      *
+           IF SUCESSO-D024
+              ADD 1 TO WS-CTLIDO
+           ELSE
+              IF NOT FIM-ARQ-D024
+                 MOVE WS-MSG03             TO WS-MSG
+                 MOVE FS-EXTTD024          TO WS-FS
+                 PERFORM 9000-ERRO
+              END-IF
+           END-IF
+           .
+      *
+       2000-PROCESSAR.
+           IF B112D024-CPF = WS-CPF-AUX
+              ADD B112D024-SALDO           TO WS-SALDO-AUX
+              PERFORM 1500-LER-EXTTD024
+           ELSE
+              PERFORM 2100-GRAVAR-EXTTA024
+              MOVE 0                       TO WS-SALDO-AUX
+              MOVE B112D024-CPF            TO WS-CPF-AUX
+              MOVE B112D024-NOME           TO WS-NOME-AUX
+           END-IF
+           .
+      *
+       2100-GRAVAR-EXTTA024.
+           MOVE WS-CPF-AUX                 TO B112A024-CPF
+           MOVE WS-NOME-AUX                TO B112A024-NOME
+           MOVE WS-DATA-PROCESSAMENTO      TO B112A024-DATA
+           MOVE WS-SALDO-AUX               TO B112A024-SALDO
+
+           WRITE FD-EXTTA024 FROM REG-EXTTA024
+
+           IF NOT SUCESSO-A024
+              MOVE WS-MSG04                TO WS-MSG
+              MOVE FS-EXTTA024             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+           ADD 1                           TO WS-CTGRAV
+           .
+      *
+       3000-TERMINO.
+           PERFORM 2100-GRAVAR-EXTTA024
+      *
+           MOVE WS-CTLIDO                  TO WS-CTLIDO-F
+           MOVE WS-CTGRAV                  TO WS-CTGRAV-F
+
+      *
+      *                      1         2         3         4         5
+      *             12345678901234567890123456789012345678901234567890
+           DISPLAY "=================================================="
+           DISPLAY "TOTAL DE REGISTROS LIDOS.........: "
+                                           WS-CTLIDO-F
+           DISPLAY "TOTAL DE REGISTROS GRAVADOS......: "
+                                           WS-CTGRAV-F
+           DISPLAY "=================================================="
+      *
+           CLOSE EXTTD024
+      *
+           IF NOT SUCESSO-D024
+              MOVE WS-MSG05                TO WS-MSG
+              MOVE FS-EXTTD024             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+      *
+           CLOSE EXTTA024
+      *
+           IF NOT SUCESSO-A024
+              MOVE WS-MSG06                TO WS-MSG
+              MOVE FS-EXTTA024             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+           DISPLAY "=================================================="
+           DISPLAY "==          TERMINO NORMAL DO P112NX01          =="
+           DISPLAY "=================================================="
+           .
+           COPY ROTERRO.

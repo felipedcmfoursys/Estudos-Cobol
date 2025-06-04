@@ -1,0 +1,27 @@
+77  WS-MSG01                        PIC X(60)    
+                                            VALUE
+    'ERRO ABERTURA FUNCANT'.                     
+77  WS-MSG02                        PIC X(60)    
+                                            VALUE
+    'ERRO ABERTURA FUNCNOVO'.                    
+77  WS-MSG03                        PIC X(60)    
+                                            VALUE
+    'ERRO ABERTURA FUNCCAD'.                     
+77  WS-MSG04                        PIC X(60)    
+                                            VALUE
+    'ERRO LEITURA FUNCANT'.                      
+77  WS-MSG05                        PIC X(60)    
+                                            VALUE
+    'ERRO LEITURA FUNCNOVO'.                     
+77  WS-MSG06                        PIC X(60)    
+                                            VALUE
+    'ERRO GRAVACAO FUNCCAD'.                     
+77  WS-MSG07                        PIC X(60)    
+                                            VALUE
+    'ERRO FECHAMENTO FUNCANT'.                   
+77  WS-MSG08                        PIC X(60)    
+                                            VALUE
+    'ERRO FECHAMENTO FUNCNOVO'.                  
+77  WS-MSG09                        PIC X(60)    
+                                            VALUE
+    'ERRO FECHAMENTO FUNCCAD'.                   

@@ -1,0 +1,115 @@
+REVISAO PROVA DE COBOL
+
+
+historia:
+origem:Grace Murray Hopper, ajudou na criacao do cobol, 
+criou a linguaguem flow-matic que serviu de base para o cobol.
+cobol foi criado em 1959 e lancado em 1960
+
+o principal motivo da criacao do cobol foi, 
+precisava-se de uma linguagem compativel entre maquinas de diferentes criadoras, 
+a ideia era criar algo compativel para todas as marcas de computadores.
+primeiro bug foi um inseto em um relê de uma maquina.
+
+Grace Murray Hopper - Flow-Matic
+COMTRAM
+
+
+
+conceitos
+ 
+processamento batch x online:
+batch eh lote de processamento
+online eh um processamento por vez
+
+
+comandos basicos:
+display
+compute (sempre espaco em branco antes do sinal)
+accept from sysin
+move to
+if/else/end-if
+perform
+perform until
+
+logicas
+merge
+
+
+If basico
+
+if A > 300 and idade < 50
+   move entrada to saida 
+   write re-saida from ws-reg-saida
+   add 1 to ws-ctgrav
+else
+   add 1 to ws-ctdesp
+end-if
+
+
+*ARQUIVOS*
+
+Exemplo 1
+
+arquivo cadcli
+registro reg-cadcli
+espelho ws-reg-cadcli
+
+open input cadcli
+
+read cadcli into ws-reg-cadcli
+close cadcli
+
+
+Exemplo 2
+
+arquivo cadprod
+registro reg-cadprod
+espelho ws-reg-cadprod
+
+open input cadprod
+write reg-cadprod from ws-reg-cadprod
+close cadprod
+
+move da entrada para a espelho
+entao
+move da espelho para saida
+funciona quando há o mesmo layout de arquivo
+se caso os layout de entrada e saida for diferente precisa mover variaveis campo a campo
+
+*PORQUE A VARIAVEL ESPELHO*
+porque o write apaga um dado apos gravacao, 
+por isso importamos a entrada para uma variavel espelho, 
+para depois gravar no arquivo de output
+
+
+*SINTAXE ARQUIVOS*
+
+read lê
+open abre
+write grava
+close fecha
+
+
+**COPY**
+
+copy cadcli replacing ==::== by ==ws-==
+
+copy cadcli replacing ==::== by ==ws-==
+
+copy cadcli replacing ==::== by ==WRK-VAR-==
+
+
+**EVALUATE**
+
+EXEMPLO DE EVALUATE
+
+EVALUATE WS-FUNCAO OF WS-TOTSUBSID
+WHEN 1 MOVE '0%         TO WS-TOTSUBSID
+WHEN 3 MOVE '25%         TO WS-TOTSUBSID
+WHEN 3 MOVE '50%          TO WS-TOTSUBSID
+END-EVALUATE
+
+
+
+

@@ -1,0 +1,476 @@
+      *--------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *-------------------------------------------------------------*
+       PROGRAM-ID.                         EXERELAT.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT RELREPO ASSIGN TO UT-S-RELREPO
+           FILE STATUS IS FS-RELREPO
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  RELREPO
+           LABEL RECORD OMITTED
+           RECORDING MODE IS F
+           RECORD CONTAINS 80 CHARACTERS
+           DATA RECORD IS REG-RELREPO
+           .
+       01  REG-RELREPO                     PIC X(80).
+
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+
+
+      *    BOOK DAS VARIAVEIS HOSPEDEIRAS
+           EXEC SQL
+               INCLUDE BKTBCAD
+           END-EXEC
+           .
+
+      *    BOOK DAS VARIAVEIS PARA USO DO SQL
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC
+
+       01  WS-CONTADORES-COMP.
+           05  WS-CTLIDO                   PIC 9(05) COMP.
+           05  WS-CTIMP                    PIC 9(05) COMP.
+           05  WS-CTPAG                    PIC 9(05) COMP.
+           05  WS-CTLIN                    PIC 9(05) COMP.
+           05  WS-PULA                     PIC 9(05) COMP.
+
+       01  WS-CONTADORES-COMP-F.
+           05  WS-CTLIDO-F                 PIC ZZZ9.
+           05  WS-CTIMP-F                  PIC ZZZ9.
+           05  WS-CTPAG-F                  PIC ZZZ9.
+           05  WS-CTLIN-F                  PIC ZZZ9.
+      *---------------------------------------------------------------*
+      *  LAYOUT DO RELATORIO                                          *
+      *---------------------------------------------------------------*
+       01  WS-CABEC1.
+           05 WS-DATA-CABEC1               PIC X(10).
+           05 FILLER                       PIC X(01)
+                                               VALUE SPACES.
+           05 WS-HORA-CABEC1               PIC X(08).
+           05 FILLER                       PIC X(10)
+                                               VALUE SPACES.
+           05 FILLER                       PIC X(20)
+                                               VALUE
+              "REPOSICAO DE ESTOQUE".
+
+           05 FILLER                       PIC X(20)
+                                               VALUE SPACES.
+
+           05 FILLER                       PIC X(05)
+                                               VALUE "PAG. ".
+           05 WS-PAG-CABEC1                PIC ZZ9.
+
+
+
+       01  WS-CABEC2.
+           05 FILLER                       PIC X(80)
+                                               VALUE ALL "-".
+
+       01  WS-CABEC3.
+           05 FILLER                       PIC X(40)
+                                               VALUE
+              " CODIGO     DESCRICAO                 ".
+
+           05 FILLER                       PIC X(40)
+                                               VALUE
+              "  PRECO    %LUCRO  ESTOQUE   REPOSICAO".
+
+
+       01  WS-CABEC4.
+           05 FILLER                       PIC X(80)
+                                                   VALUE ALL "-".
+
+      *----------------------------------------------------------------*
+      *    DETALHES                                                    *
+      *----------------------------------------------------------------*
+       01  WS-LINDET.
+           05 FILLER                       PIC X(02)
+                                                   VALUE SPACES.
+
+           05 LD-CODPROD                   PIC X(04).
+           05 FILLER                       PIC X(04)
+                                                   VALUE SPACES.
+
+           05 LD-DESCPROD                  PIC X(20).
+           05 FILLER                       PIC X(07)
+                                                   VALUE
+              "    R$ ".
+
+           05 LD-PRECOPROD                 PIC ZZZ.ZZ9,99.
+           05 FILLER                       PIC X(04)
+                                                   VALUE SPACES.
+
+           05 LD-LUCRO                     PIC ZZ9,99+.
+           05 FILLER                       PIC X(02)
+                                                   VALUE SPACES.
+
+           05 LD-ESTOQUE                   PIC ZZ.ZZ9.
+           05 FILLER                       PIC X(06)
+                                                   VALUE SPACES.
+
+
+           05 LD-REPOSICAO                 PIC ZZ.ZZ9
+                                                   BLANK WHEN ZERO.
+           05 FILLER                       PIC X(02)
+                                                   VALUE SPACES.
+
+      *----------------------------------------------------------------*
+      *    RODAPE                                                      *
+      *----------------------------------------------------------------*
+       01  WS-RODAPE1                      PIC X(80)
+                                                   VALUE ALL "-".
+       01  WS-RODAPE2.
+
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "          WEYLAND-YUTANI             ".
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "   CONSTRUINDO MUNDOS MELHORES       ".
+       01  WS-RODAPE3                      PIC X(80)
+                                                   VALUE ALL "-".
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-RELREPO                      PIC X(02).
+           88 SUCESSO                              VALUE '00'.
+           88 FIM-ARQ                              VALUE '10'.
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE DATA                                            *
+      *--------------------------------------------------------------*
+       01  WS-DATA-SYS.
+           05 WS-ANO                       PIC 9(02).
+           05 WS-MES                       PIC 9(02).
+           05 WS-DIA                       PIC 9(02).
+
+       01  WS-DATA-FORMATADA.
+           05 WS-DIA                       PIC 9(02).
+           05 FILLER                       PIC X(01) VALUE "/".
+
+           05 WS-MES                       PIC 9(02).
+           05 FILLER                       PIC X(03) VALUE "/20".
+
+           05 WS-ANO                       PIC 9(02).
+
+       01 WS-HORA-SYS.
+           05 WS-HORA                      PIC 9(02).
+           05 WS-MINUTO                    PIC 9(02).
+           05 WS-SEGUNDO                   PIC 9(02).
+
+       01  WS-HORA-FORMATADA.
+           05 WS-HORA                      PIC 9(02).
+           05 FILLER                       PIC X(01) VALUE ":".
+
+           05 WS-MINUTO                    PIC 9(02).
+           05 FILLER                       PIC X(01) VALUE ":".
+
+           05 WS-SEGUNDO                   PIC 9(02).
+           COPY VARDATA.
+           COPY VARTIME.
+
+      *--------------------------------------------------------------*
+      *    INDICADORES                                               *
+      *--------------------------------------------------------------*
+       01  WS-INDICADORES.
+           05 ICODPROD                     PIC S9(04) COMP.
+           05 IDESCPROD                    PIC S9(04) COMP.
+           05 IPRECOCOMPRA                 PIC S9(04) COMP.
+           05 IPRECOVENDA                  PIC S9(04) COMP.
+           05 IQTDEST                      PIC S9(04) COMP.
+           05 IQTDMAX                      PIC S9(04) COMP.
+
+       77  WS-SQLCODE                      PIC +9(09).
+       77  WS-LUCRO                        PIC S9(3)V9(6).
+       77  WS-QTDREP                       PIC 9(05).
+
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+           DISPLAY '0000-MAIN'
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+               UNTIL SQLCODE = +100
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           DISPLAY '1000-INICIALIZAR'
+           ACCEPT WS-HORARIO-INICIAL FROM TIME
+
+           INITIALIZE WS-CONTADORES-COMP
+
+           MOVE 99                         TO WS-CTLIN
+
+           MOVE 0                          TO WS-CTLIDO
+                                              WS-CTIMP
+                                              WS-CTPAG
+           ACCEPT WS-DATA-SYS FROM DATE
+           ACCEPT WS-HORA-SYS FROM TIME
+           MOVE CORRESPONDING WS-DATA-SYS TO WS-DATA-FORMATADA
+           MOVE CORRESPONDING WS-HORA-SYS TO WS-HORA-FORMATADA
+
+      * DECLARACAO DO CURSOR PARA REPOSICAO
+
+           EXEC SQL
+               DECLARE REPOSICAO CURSOR FOR
+                   SELECT CODPROD,
+                          DESCPROD,
+                          PRECOCOMPRA,
+                          PRECOVENDA,
+                          QTDEST,
+                          QTDMAX
+                   FROM TBPRODUTO
+                   WHERE QTDMAX > QTDEST
+           END-EXEC
+
+      * ABERTURA DO CURSOR
+           EXEC SQL
+               OPEN REPOSICAO
+           END-EXEC
+
+           IF SQLCODE NOT EQUAL 0
+               DISPLAY "ERRO AO ABRIR CURSOR"
+               MOVE SQLCODE                  TO WS-SQLCODE
+               GO TO 9000-ERRO-DB2
+           END-IF
+
+           OPEN OUTPUT RELREPO
+
+           IF NOT SUCESSO
+               DISPLAY "ERRO ABERTURA CLIRELAT"
+               DISPLAY FS-RELREPO
+               GO TO 9000-ERRO
+           END-IF
+
+           PERFORM 1500-LER-REPOSICAO
+           .
+
+       1500-LER-REPOSICAO.
+           DISPLAY '1500-LER-REPOSICAO'
+           EXEC SQL
+               FETCH REPOSICAO
+               INTO :CODPROD,
+                    :DESCPROD,
+                    :PRECOCOMPRA :IPRECOCOMPRA,
+                    :PRECOVENDA  :IPRECOVENDA,
+                    :QTDEST      :IQTDEST,
+                    :QTDMAX      :IQTDMAX
+           END-EXEC
+
+           IF SQLCODE = 0
+               ADD 1 TO WS-CTLIDO
+               PERFORM 1600-TRATA-INDICATOR
+           ELSE
+               IF SQLCODE NOT = +100
+                   DISPLAY "ERRO DE LEITURA CURSOR"
+                   MOVE SQLCODE    TO WS-SQLCODE
+                   GO TO 9000-ERRO-DB2
+               END-IF
+           END-IF
+           .
+
+       1600-TRATA-INDICATOR.
+           DISPLAY '1600-INDICATOR'
+           IF IPRECOCOMPRA < 0
+               MOVE ZEROS                   TO PRECOCOMPRA
+           END-IF
+
+           IF IPRECOVENDA < 0
+               MOVE ZEROS                   TO PRECOVENDA
+           END-IF
+
+           IF IQTDEST < 0
+               MOVE ZEROS                   TO QTDEST
+           END-IF
+
+           IF IQTDMAX < 0
+               MOVE ZEROS                   TO QTDMAX
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           DISPLAY '2000-PROCESSAR'
+           IF WS-CTLIN   > 59
+               PERFORM 2100-IMPRIME-CABECALHO
+           END-IF
+
+           PERFORM 2200-IMPRIME-DETALHE
+
+           IF WS-CTLIN   = 58
+               PERFORM 2300-IMPRIME-RODAPE
+           END-IF
+
+           PERFORM 1500-LER-REPOSICAO
+           .
+
+       2100-IMPRIME-CABECALHO.
+           DISPLAY '2100-IMPRIME-CABECALHO'
+           MOVE WS-DATA-FORMATADA           TO WS-DATA-CABEC1
+           MOVE WS-HORA-FORMATADA           TO WS-HORA-CABEC1
+           ADD 1                            TO WS-CTPAG
+           MOVE WS-CTPAG                    TO WS-PAG-CABEC1
+
+           WRITE REG-RELREPO FROM WS-CABEC1 AFTER PAGE
+           IF NOT SUCESSO
+               DISPLAY "ERRO IMPRESSAO CABEC1"
+               DISPLAY FS-RELREPO
+               GO TO 9000-ERRO
+           END-IF
+
+           WRITE REG-RELREPO FROM WS-CABEC2
+           IF NOT SUCESSO
+               DISPLAY "ERRO IMPRESSAO CABEC2"
+               DISPLAY FS-RELREPO
+               GO TO 9000-ERRO
+           END-IF
+
+           WRITE REG-RELREPO FROM WS-CABEC3
+           IF NOT SUCESSO
+               DISPLAY "ERRO IMPRESSAO CABEC3"
+               DISPLAY FS-RELREPO
+               GO TO 9000-ERRO
+           END-IF
+
+           WRITE REG-RELREPO FROM WS-CABEC4
+           IF NOT SUCESSO
+               DISPLAY "ERRO IMPRESSAO CABEC4"
+               DISPLAY FS-RELREPO
+               GO TO 9000-ERRO
+           END-IF
+
+           MOVE 4                          TO WS-CTLIN
+           .
+
+       2200-IMPRIME-DETALHE.
+           DISPLAY '2200-IMPRIME-DETALHE'
+
+           COMPUTE WS-LUCRO = (PRECOVENDA / PRECOCOMPRA - 1) * 100
+           COMPUTE WS-QTDREP = QTDMAX - QTDEST
+
+           MOVE CODPROD                 TO LD-CODPROD
+           MOVE DESCPROD                TO LD-DESCPROD
+           MOVE PRECOVENDA              TO LD-PRECOPROD
+           MOVE WS-LUCRO                TO LD-LUCRO
+           MOVE QTDEST                  TO LD-ESTOQUE
+           MOVE WS-QTDREP               TO LD-REPOSICAO
+
+           WRITE REG-RELREPO FROM WS-LINDET
+           IF NOT SUCESSO
+               DISPLAY "ERRO NA IMPRESSAO DO DETALHE"
+               DISPLAY FS-RELREPO
+               GO TO 9000-ERRO
+           END-IF
+
+           ADD 1 TO WS-CTLIN
+           ADD 1 TO WS-CTIMP
+           .
+
+       2300-IMPRIME-RODAPE.
+           DISPLAY '2300-IMPRIME-RODAPE'
+           COMPUTE WS-PULA = 59 - WS-CTLIN
+
+           WRITE REG-RELREPO FROM WS-RODAPE1 AFTER WS-PULA LINES
+           IF NOT SUCESSO
+               DISPLAY "ERRO IMPRESSAO WS-RODAPE1"
+               DISPLAY FS-RELREPO
+           END-IF
+
+           WRITE REG-RELREPO FROM WS-RODAPE2
+           IF NOT SUCESSO
+               DISPLAY "ERRO IMPRESSAO WS-RODAPE2"
+               DISPLAY FS-RELREPO
+           END-IF
+
+           WRITE REG-RELREPO FROM WS-RODAPE3
+           IF NOT SUCESSO
+               DISPLAY "ERRO IMPRESSAO WS-RODAPE3"
+               DISPLAY FS-RELREPO
+           END-IF
+
+           MOVE 60 TO WS-CTLIN
+           .
+
+       3000-TERMINO.
+           DISPLAY '3000-TERMINO'
+           IF WS-CTLIN < 60
+               PERFORM 2300-IMPRIME-RODAPE
+           END-IF
+
+           MOVE WS-CTLIDO                    TO WS-CTLIDO-F
+           MOVE WS-CTIMP                     TO WS-CTIMP-F
+           MOVE WS-CTPAG                     TO WS-CTPAG-F
+
+           EXEC SQL
+               CLOSE REPOSICAO
+           END-EXEC
+
+           IF SQLCODE NOT EQUAL 0
+               DISPLAY "ERRO AO FECHAR CURSOR"
+               MOVE SQLCODE TO WS-SQLCODE
+               GO TO 9000-ERRO-DB2
+           END-IF
+
+           CLOSE RELREPO
+           IF NOT SUCESSO
+               DISPLAY "ERRO FECHAMENTO CLIRELAT"
+               DISPLAY FS-RELREPO
+               GO TO 9000-ERRO
+           END-IF
+
+           ACCEPT WS-HORARIO-FINAL FROM TIME
+           PERFORM 9000-CALCULA-TEMPO-PROC
+           PERFORM 9000-IMPRIME-DATA
+
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '                 WEYLAND-YUTANI                   '
+           DISPLAY '--------------------------------------------------'
+           DISPLAY 'TOTAL DE CLIENTE LIDOS............' WS-CTLIDO-F
+           DISPLAY 'TOTAL DE CLIENTE IMPRESSOS........' WS-CTLIN-F
+           DISPLAY 'TOTAL DE PAGINAS IMPRESSAS........' WS-CTPAG-F
+           DISPLAY '--------------------------------------------------'
+           DISPLAY 'TEMPO TOTAL DE PROCESSAMENTO...'
+           DISPLAY WS-TEMPO-PROCESSAMENTO
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL EXERELAT              '
+           DISPLAY '=================================================='
+           .
+
+       9000-ERRO.
+           DISPLAY '9000-ERRO'
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '   XXX      TERMINO ANORMAL DO EXERELAT     XXX   '
+           DISPLAY '--------------------------------------------------'
+           STOP RUN
+           .
+
+       9000-ERRO-DB2.
+           DISPLAY '9000-ERRO-DB2'
+           DISPLAY '=================================================='
+           DISPLAY 'CODIGO...: ' WS-SQLCODE
+           DISPLAY '=================================================='
+           .
+
+           COPY ROTDATA.
+           COPY ROTPROC.
+
+

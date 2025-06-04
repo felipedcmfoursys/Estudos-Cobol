@@ -1,0 +1,260 @@
+      *--------------------------------------------------------------*  00010004
+       IDENTIFICATION                      DIVISION.                    00020004
+      *--------------------------------------------------------------*  00030004
+       PROGRAM-ID.                         P112NX04.                    00040008
+       AUTHOR.                             NELSON.                      00050008
+      *                                                                 00060004
+      *--------------------------------------------------------------*  00070004
+       ENVIRONMENT                         DIVISION.                    00080004
+      *--------------------------------------------------------------*  00090004
+       CONFIGURATION                       SECTION.                     00100004
+       SPECIAL-NAMES.                                                   00110004
+           DECIMAL-POINT IS COMMA.                                      00120004
+      *
+       INPUT-OUTPUT                        SECTION.
+       FILE-CONTROL.
+           SELECT EXTTA024 ASSIGN          TO UT-S-EXTTA024
+           FILE STATUS IS FS-EXTTA024
+           .
+           SELECT EXTTCR24 ASSIGN          TO UT-S-EXTTCR24
+           FILE STATUS IS FS-EXTTCR24
+           .
+           SELECT EXTTDV24 ASSIGN          TO UT-S-EXTTDV24
+           FILE STATUS IS FS-EXTTDV24
+           .
+      *--------------------------------------------------------------*  00130004
+       DATA                                DIVISION.                    00140004
+      *--------------------------------------------------------------*  00150004
+       FILE                                SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+       FD  EXTTA024
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTA024
+           .
+       01  FD-EXTTA024                     PIC X(44).
+
+       FD  EXTTCR24
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTCR24
+           .
+       01  FD-EXTTCR24                     PIC X(44).
+
+       FD  EXTTDV24
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTDV24
+           .
+       01  FD-EXTTDV24                     PIC X(44).
+
+      *--------------------------------------------------------------*  00210008
+       WORKING-STORAGE                     SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+      * DECLARACAO DAS VARIAVEIS ESPELHO DOS ARQUIVOS
+      *--------------------------------------------------------------*  00210008
+           COPY B112A024.
+           COPY B112CR24.
+           COPY B112DV24.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE FILE STATUS
+      *--------------------------------------------------------------*  00210008
+           COPY VARERRO.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE FILE STATUS
+      *--------------------------------------------------------------*  00210008
+       01  FS-EXTTA024                     PIC X(02).
+           88 SUCESSO-A024                         VALUE '00'.
+           88 FIM-ARQ-A024                         VALUE '10'.
+
+       01  FS-EXTTCR24                     PIC X(02).
+           88 SUCESSO-CR24                         VALUE '00'.
+           88 FIM-ARQ-CR24                         VALUE '10'.
+
+       01  FS-EXTTDV24                     PIC X(02).
+           88 SUCESSO-DV24                         VALUE '00'.
+           88 FIM-ARQ-DV24                         VALUE '10'.
+
+      *--------------------------------------------------------------*  00210008
+      * COLOCAR AS MENSAGEMS EM VARIAVEIS EH UMA BOA PRATICA
+      *--------------------------------------------------------------*  00210008
+       77  WS-MSG01                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA EXTTA024'.
+       77  WS-MSG02                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA EXTTCR24'.
+       77  WS-MSG03                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA EXTTDV24'.
+       77  WS-MSG04                        PIC X(60)
+                                                   VALUE
+           'ERRO LEITURA EXTTA024'.
+       77  WS-MSG05                        PIC X(60)
+                                                   VALUE
+           'ERRO GRAVACAO EXTTCR24'.
+       77  WS-MSG06                        PIC X(60)
+                                                   VALUE
+           'ERRO GRAVACAO EXTTDV24'.
+       77  WS-MSG07                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO EXTTA024'.
+       77  WS-MSG08                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO EXTTCR24'.
+       77  WS-MSG09                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO EXTTDV24'.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE TRABALHO
+      *--------------------------------------------------------------*  00210008
+       77  WS-CTLIDO                       PIC 9(04)    COMP.           00210208
+       77  WS-CTGRAV-CR24                  PIC 9(04)    COMP.           00210308
+       77  WS-CTGRAV-DV24                  PIC 9(04)    COMP.           00210308
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS COM MASCARA DE EDICAO (FORMATADAS)
+      *--------------------------------------------------------------*  00210008
+       77  WS-CTLIDO-F                     PIC ZZZ9.                    00210208
+       77  WS-CTGRAV-CR24-F                PIC ZZZ9.                    00210308
+       77  WS-CTGRAV-DV24-F                PIC ZZZ9.                    00210308
+      *--------------------------------------------------------------*  00211007
+       PROCEDURE                           DIVISION.                    00220004
+      *--------------------------------------------------------------*  00230004
+       0000-MAIN.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+                   UNTIL FIM-ARQ-A024
+           PERFORM 3000-TERMINO
+           GOBACK
+           .
+      *
+       1000-INICIALIZAR.
+           MOVE 0                          TO WS-CTLIDO
+           MOVE 0                          TO WS-CTGRAV-CR24
+           MOVE 0                          TO WS-CTGRAV-DV24
+      *
+           OPEN INPUT EXTTA024
+      *
+           IF NOT SUCESSO-A024
+              MOVE WS-MSG01                TO WS-MSG
+              MOVE FS-EXTTA024             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           OPEN OUTPUT EXTTCR24
+      *
+           IF NOT SUCESSO-CR24
+              MOVE WS-MSG02                TO WS-MSG
+              MOVE FS-EXTTCR24             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+           OPEN OUTPUT EXTTDV24
+
+           IF NOT SUCESSO-DV24
+              MOVE WS-MSG03                TO WS-MSG
+              MOVE FS-EXTTDV24             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           PERFORM 1500-LER-EXTTA024
+           .
+      *
+       1500-LER-EXTTA024.
+           READ EXTTA024 INTO REG-EXTTA024
+      *
+           IF SUCESSO-A024
+              ADD 1 TO WS-CTLIDO
+           ELSE
+              IF NOT FIM-ARQ-A024
+                 MOVE WS-MSG04             TO WS-MSG
+                 MOVE FS-EXTTA024          TO WS-FS
+                 PERFORM 9000-ERRO
+              END-IF
+           END-IF
+           .
+      *
+       2000-PROCESSAR.
+           IF B112A024-SALDO >= 0
+              MOVE REG-EXTTA024            TO REG-EXTTCR24
+              WRITE FD-EXTTCR24 FROM REG-EXTTCR24
+      *
+              IF NOT SUCESSO-CR24
+                 MOVE WS-MSG05             TO WS-MSG
+                 MOVE FS-EXTTCR24          TO WS-FS
+                 PERFORM 9000-ERRO
+              END-IF
+      *
+              ADD 1 TO WS-CTGRAV-CR24
+           ELSE
+              MOVE REG-EXTTA024            TO REG-EXTTDV24
+              WRITE FD-EXTTDV24 FROM REG-EXTTDV24
+      *
+              IF NOT SUCESSO-DV24
+                 MOVE WS-MSG06             TO WS-MSG
+                 MOVE FS-EXTTDV24          TO WS-FS
+                 PERFORM 9000-ERRO
+              END-IF
+      *
+              ADD 1 TO WS-CTGRAV-DV24
+           END-IF
+      *
+           PERFORM 1500-LER-EXTTA024
+           .
+      *
+       3000-TERMINO.
+           MOVE WS-CTLIDO                  TO WS-CTLIDO-F
+           MOVE WS-CTGRAV-CR24             TO WS-CTGRAV-CR24-F
+           MOVE WS-CTGRAV-DV24             TO WS-CTGRAV-DV24-F
+
+      *
+      *                      1         2         3         4         5
+      *             12345678901234567890123456789012345678901234567890
+           DISPLAY "=================================================="
+           DISPLAY "TOTAL DE REGISTROS LIDOS.........: "
+                                           WS-CTLIDO-F
+           DISPLAY "TOTAL DE REGISTROS GRAVADOS CR24.: "
+                                           WS-CTGRAV-CR24-F
+           DISPLAY "TOTAL DE REGISTROS GRAVADOS DV24.: "
+                                           WS-CTGRAV-DV24-F
+           DISPLAY "=================================================="
+      *
+           CLOSE EXTTA024
+      *
+           IF NOT SUCESSO-A024
+              MOVE WS-MSG07                TO WS-MSG
+              MOVE FS-EXTTA024             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           CLOSE EXTTCR24
+      *
+           IF NOT SUCESSO-CR24
+              MOVE WS-MSG08                TO WS-MSG
+              MOVE FS-EXTTCR24             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+      *
+           CLOSE EXTTDV24
+      *
+           IF NOT SUCESSO-DV24
+              MOVE WS-MSG09                TO WS-MSG
+              MOVE FS-EXTTDV24             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+           DISPLAY "=================================================="
+           DISPLAY "==          TERMINO NORMAL DO P112NX04          =="
+           DISPLAY "=================================================="
+           .
+           COPY ROTERRO.

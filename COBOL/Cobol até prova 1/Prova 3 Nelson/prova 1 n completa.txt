@@ -1,0 +1,71 @@
+custokwkm = distmes * ((12 / 90) * 
+custokwhcustokwh = 12/90 = R$0,7
+custokwhmes = 0,7 * distmes
+
+77 ws-precogas pic 9 (04)v99. value 6,5. 
+77 precokwh pic 9(04)v99 value 0,7
+77 ws-porc-eco pic 9 (02).
+
+
+
+
+2000-processar
+    move 0                       to ws-custgasolinames-s
+                                    ws-custgasano-s
+                                    ws-custokwhmes-s 
+                                    ws-custokwhano-s
+                                    ws-valecon-s
+                                    ws-distdia-s
+                                    ws-distmes-s
+
+
+
+
+    if distdia-e > 200
+       move inviavel             to resultado
+    else  
+
+    compute ws-custgasolinames-s = ws-litrosmes-e * ws-precogas
+    compute ws-custgasano-s      = ws-custgasmes * 12
+    compute ws-custokwhmes-s     = ws-distanciames-e * 12/90 * precokwh
+    compute ws-custokwano-s       = ws-custokwhmes-s * 12
+    compute ws-valecon-s	 = (ws-custgasmes-s - custokwmes-s)
+    compute ws-porc-eco          = ws-valecon-s / ws-custgasmes * 100
+ 
+    if ws-porc-eco >= 70
+       move alto potencial       to resultado
+      else
+        if ws-porc-eco >= 40
+           move potencial           to resultado
+        else
+	   move impotencial         to resultado
+        end-if
+      end-if
+      move ws-distdia-e to distdia-s
+      move ws-distmes-e to distmes-s
+     end-if   
+
+
+    move nomecli-e         to nomecli-s
+   
+write reg-saida-s from ws-reg-saida-s
+
+    if fs-saida = `00`
+       add 1 to ctgrav
+    else
+       move erro to msg
+       move fs-saida to ws-fs
+    end-if
+    
+
+
+
+
+
+entrada 
+nomecli-e pic
+marca-e
+anocarro-e
+distdia-e
+distmes-e
+litrosmes-e

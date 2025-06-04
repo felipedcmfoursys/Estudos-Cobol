@@ -1,0 +1,9 @@
+       01  REG-EMPR2025.                                                00020002
+           05 CPF-EMPR2025                 PIC X(11).                   00030002
+           05 NOME-EMPR2025                PIC X(16).                   00040002
+           05 DATA-EMPR2025                PIC X(10).                   00050002
+           05 SALDO-EMPR2025               PIC S9(11)V99 COMP-3.        00060002
+           05 ACORDOVALORAVISTA            PIC  9(11)V99 COMP-3.        00061005
+           05 VALORPARC                    PIC  9(11)V99 COMP-3.        00070005
+           05 JUROSACORDOVALORPARC         PIC  9(11)V99 COMP-3.        00080005
+           05 VALORTOTALPARC               PIC  9(11)V99 COMP-3.        00090005

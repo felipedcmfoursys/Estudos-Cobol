@@ -1,0 +1,142 @@
+      *----------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *----------------------------------------------------------------*
+       PROGRAM-ID.                         EXPROV01.
+       AUTHOR.                             FELIPE.
+      *----------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *----------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+       INPUT-OUTPUT                        SECTION.
+       FILE-CONTROL.
+           SELECT CARROCLI ASSIGN          TO UT-S-CARROCLI
+           FILE STATUS IS FS-CARROCLI
+           .
+           SELECT CARRORES ASSIGN          TO UT-S-CARRORES
+           FILE STATUS IS FS-CARRORES
+           .
+      *----------------------------------------------------------------*
+       DATA                                DIVISION.
+      *----------------------------------------------------------------*
+       FILE                                SECTION.
+      *----------------------------------------------------------------*
+       FD  CARROCLI.
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 58 CHARACTERS
+           DATA RECORD IS REG-CARROCLI
+           .
+           COPY CARROCLI REPLACING ==::== BY ====.
+      *----------------------------------------------------------------*
+       FD  CARRORES.
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS XX CHARACTERS
+           DATA RECORD IS REG-CARRORES
+           .
+           COPY CARRORES REPLACING ==::== BY ====.
+      *----------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *----------------------------------------------------------------*
+      * DECLACARACAO VARIAVEIS ESPELHO                                 *
+      *----------------------------------------------------------------*
+           COPY CARROCLI REPLACING ==::== BY ==WS-==.
+           COPY CARRORES REPLACING ==::== BY ==WS-==.
+       77  WS-KW                           PIC 9(02)V99.
+       77  WS-VALORKWKM                    PIC 9(02)V99.
+                                                      VALUE
+           "8,4"
+       77  WS-PRECOGAS                     PIC 9(02)V99.
+                                                      VALUE
+           "6,50"
+       77  WS-CONSUMOCAR                   PIC 9(05)V99.
+       77  WS-MEDIA                        PIC 9(05)V99.
+       77  WS-VALORKM                      PIC 9(02)V99.
+       77  WS-PORCENTAGEM                  PIC 9(02).
+      *----------------------------------------------------------------*
+      * DECLARACAO FILE STATUS                                         *
+      *----------------------------------------------------------------*
+       77  FS-CARROCLI                     PIC 9(02).
+       77  FS-CARRORES                     PIC 9(02).
+       77  WS-CLIDO                        PIC 9(02) COMP.
+       77  WS-CTGRAV                       PIC 9(02) COMP.
+      *----------------------------------------------------------------*
+      * MENSAGENS DE ERRO                                              *
+      *----------------------------------------------------------------*
+       77  WS-MSG01                        PIC X(20).
+                                                    VALUE
+           'ERRO ABERTURA CARROCLI'.
+       77  WS-MSG02                        PIC X(20).
+                                                   VALUE
+           'ERRO ABERTURA CARRORES'.
+       77  WS-MSG03                        PIC X(20).
+                                                   VALUE
+           'ERRO LEITURA CARROCLI'.
+       77  WS-MSG04                        PIC X(20).
+                                                   VALUE
+           'ERRO GRAVACAO CARRORES'.
+       77  WS-FS                           PIC X(04).
+      *----------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *----------------------------------------------------------------*
+       0000-EXPROV01.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR          UNTIL FS-CARROCLI = "10"
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR
+           MOVE 0                          TO WS-CTLIDO
+           MOVE 0                          TO WS-CTGRAV
+           OPEN INPUT CARROCLI
+           IF FS-CARROCLI NOT = "00"
+              MOVE WS-MSG01                TO WS-MSG
+              MOVE FS-CARROCLI             TO WS-FS
+              GO TO 9000-ERRO
+
+           OPEN OUTPUT CARRORES
+           IF FS-CARRORES NOT = "00"
+              MOVE WS-MSG02                TO WS-MSG
+              MOVE FS-CARRORES             TO WS-FS
+              GO TO 9000-ERRO
+           PERFORM 1100-LER-CARROCLI
+       1100-LER-CARROCLI.
+           READ CARROCLI INTO WS-REG-CARROCLI
+           IF FS-CARROCLI = "00"
+              ADD 1                        TO WS-CTLIDO
+           ELSE
+              IF FS-CARROCLI = "10"
+                 MOVE HIGH VALUES          TO WS-NOMECLI
+              ELSE
+                 MOVE MSG03                TO WS-MSG
+                 MOVE FS-CARROCLI          TO WS-FS
+                 GO TO 9000-ERRO
+       2000-PROCESSAR.
+           IF WS-DISTDIA < 200
+              MOVE "INVIAVEL"              TO WS-RESULTADO
+              MOVE WS-NOMECLI              TO WS-NOMECLI-F
+           END-IF
+
+           COMPUTE WS-LITROSDIA = WS-LITROSMES / 30
+           COMPUTE WS-VALORKM = WS-PRECOGAS / WS-CONSUMO
+           COMPUTE WS-ECONOMIA =  WS-VALORKM / VALORKWKM
+           COMPUTE WS-PORCENTAGEM = 100 - WS-ECONOMIA
+
+           IF WS-PORCENTAGEM >= 70
+              DISPLAY "CLIENTE EM ALTO POTENCIAL"
+                                           TO WS-RESULTADO
+           ELSE
+             IF WS-PORCENTAGEM > 40 AND < 69
+              DISPLAY "CLIENTE EM POTENCIAL"
+                                           TO WS-RESULTADO
+             ELSE WS-PORCENTAGEM < 40
+              DISPLAY "CLIENTE EM BAIXO POTENCIAL"
+                                           TO WS-RESULTADO
+             END-IF
+           END-IF
+           .

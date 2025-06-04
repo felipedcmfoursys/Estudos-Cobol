@@ -1,0 +1,413 @@
+      *                                                                 
+      *--------------------------------------------------------------*  
+       IDENTIFICATION                      DIVISION.                    
+      *--------------------------------------------------------------*  
+      *                                                                 
+       PROGRAM-ID.                         BLNCLNE1.                    
+       AUTHOR.                             FELIPE.                     
+      *                                                                 
+      *--------------------------------------------------------------*  
+       ENVIRONMENT                         DIVISION.                    
+      *--------------------------------------------------------------*  
+      *                                                                 
+       CONFIGURATION                       SECTION.                     
+       SPECIAL-NAMES.                                                   
+           DECIMAL-POINT IS COMMA.                                      
+      *                                                                 
+       INPUT-OUTPUT                        SECTION.                     
+      *                                                                 
+       FILE-CONTROL.
+           SELECT PRODCAD ASSIGN TO UT-S-PRODCAD
+           FILE STATUS IS FS-PRODCAD
+           .
+           SELECT PRODMOV ASSIGN TO UT-S-PRODMOV
+           FILE STATUS IS FS-PRODMOV
+           .
+           SELECT PRODNEW ASSIGN TO UT-S-PRODNEW
+           FILE STATUS IS FS-PRODNEW
+           .
+      *
+      *--------------------------------------------------------------*  
+       DATA                                DIVISION.                    
+      *--------------------------------------------------------------*  
+       FILE                                SECTION.                     
+      *--------------------------------------------------------------*  
+       FD  PRODCAD
+           RECORDING MODE IS F
+           .
+       01  FD-PRODCAD.
+           COPY BPRODCAD.
+      *--------------------------------------------------------------*  
+       FD  PRODMOV
+           RECORDING MODE IS F
+           .
+       01  FD-PRODMOV.
+           COPY BPRODMOV.
+      *--------------------------------------------------------------*  
+       FD  PRODNEW
+           RECORDING MODE IS F
+           .
+       01  FD-PRODNEW.
+           COPY BPRODNEW.
+      *--------------------------------------------------------------*  
+       WORKING-STORAGE                     SECTION.                     
+      *--------------------------------------------------------------*  
+      * FLAGS PARA O FILE STATUS OS ARQUIVOS
+      *--------------------------------------------------------------*  
+       01  FS-PRODCAD                    PIC X(02).
+           88 SUCESSO-CAD                        VALUE '00'.
+           88 FIM-ARQ-CAD                        VALUE '10'.
+      *
+       01  FS-PRODMOV                    PIC X(02).
+           88 SUCESSO-MOV                        VALUE '00'.
+           88 FIM-ARQ-MOV                        VALUE '10'.
+      *
+       01  FS-PRODNEW                    PIC X(02).
+           88 SUCESSO-NEW                        VALUE '00'.
+           88 FIM-ARQ-NEW                        VALUE '10'.
+      *
+      *--------------------------------------------------------------*  
+      * VARIAVEIS E FILLERS RELATORIO                                *
+      *--------------------------------------------------------------*
+       01  WS-CABEC1.
+           05 WS-DATA-CABEC1               PIC X(10).
+           05 FILLER                       PIC X(02)
+                                               VALUE SPACES.
+           05 WS-HORA-CABEC1               PIC X(08).
+           05 FILLER                       PIC X(02)
+                                               VALUE SPACES.
+           05 FILLER                       PIC X(46)
+                                               VALUE
+           "RELATORIO DE OCORRENCIAS DO BALANCE LINE 1:N".
+           05 FILLER                       PIC X(13)
+                                               VALUE
+           "        PAG. ".
+           05 WS-PAG-CABEC1                PIC Z9.
+
+       01  WS-CABEC2                       PIC X(90)
+                                                   VALUE ALL "-".
+       01  WS-CABEC3.
+           05 FILLER                       PIC X(43)
+                                                   VALUE
+           " ARQUIVO    REGISTRO           OCORRENCIA  ".
+           05 FILLER                       PIC X(43)
+                                                   VALUE
+           "T.EST.    QT.MIN.    QT.REP.   ULT.PRECO   ".
+       01  WS-CABEC4.
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              " ------  ---------------------------   -".
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "------   -------   ------   ----------  ".
+       01  WS-LINDET.
+           05 FILLER                       PIC X(02)
+                                                   VALUE SPACES.
+           05 LD-CODPROD                   PIC 99.999.
+           05 FILLER                       PIC X(03)
+                                                   VALUE SPACES.
+           05 LD-DESCRICAO                 PIC X(25).
+           05 FILLER                       PIC X(05)
+                                                   VALUE SPACES.
+
+           05 LD-QTDEST                    PIC 999.
+           05 FILLER                       PIC X(07)
+                                                   VALUE SPACES.
+
+           05 LD-QTDMIN                    PIC 999.
+           05 FILLER                       PIC X(07)
+                                                   VALUE SPACES.
+
+           05 LD-QTDREP                    PIC 999.
+           05 FILLER                       PIC X(06)
+                                                   VALUE SPACES.
+
+           05 LD-PRECO                     PIC Z.ZZ9,99.
+           05 FILLER                       PIC X(02)
+                                                   VALUE SPACES.
+
+       01  WS-RODAPE1                      PIC X(80)
+                                                   VALUE ALL "-".
+       01  WS-RODAPE2.
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "          INDUSTRIAS CURURU LTDA.       ".
+           05 FILLER                       PIC X(40)
+                                                   VALUE
+              "       SERVIMOS BEM PARA SERVIR SEMPRE  "
+      *--------------------------------------------------------------*  
+      * CONTADORES NO FORMATO BINARIO
+      *--------------------------------------------------------------*  
+       77  WS-CTLIDO-CAD                 PIC 9(04) COMP.
+       77  WS-CTLIDO-MOV                 PIC 9(04) COMP.
+       77  WS-CTGRAV-NEW                 PIC 9(04) COMP.
+       77  WS-CTINC-NEW                  PIC 9(04) COMP.
+       77  WS-CTSEMMOV                   PIC 9(04) COMP.
+       77  WS-CTMOVINV                   PIC 9(04) COMP.
+      *--------------------------------------------------------------*  
+      * CONTADORES COM MASCARA DE EDICAO
+      *--------------------------------------------------------------*  
+       77  WS-CTLIDO-CAD-F               PIC ZZZ9.
+       77  WS-CTLIDO-MOV-F               PIC ZZZ9.
+       77  WS-CTGRAV-NEW-F               PIC ZZZ9.
+       77  WS-CTINC-NEW-F                PIC ZZZ9.
+       77  WS-CTSEMMOV-F                 PIC ZZZ9.
+       77  WS-CTMOVINV-F                 PIC ZZZ9.
+      *--------------------------------------------------------------*  
+      * VARIAVEIS PARA AS MENSAGENS
+      *--------------------------------------------------------------*  
+       77  WS-MSG01                      PIC X(60) VALUE
+           'ERRO ABERTURA PRODCAD'.
+       77  WS-MSG02                      PIC X(60) VALUE
+           'ERRO ABERTURA PRODMOV'.
+       77  WS-MSG03                      PIC X(60) VALUE
+           'ERRO ABERTURA PRODNEW'.
+       77  WS-MSG04                      PIC X(60) VALUE
+           'ERRO LEITURA PRODCAD'.
+       77  WS-MSG05                      PIC X(60) VALUE
+           'ERRO LEITURA PRODMOV'.
+       77  WS-MSG06                      PIC X(60) VALUE
+           'ERRO GRAVACAO PRODNEW'.
+       77  WS-MSG07                      PIC X(60) VALUE
+           'ERRO FECHAMENTO PRODCAD'.
+       77  WS-MSG08                      PIC X(60) VALUE
+           'ERRO FECHAMENTO PRODMOV'.
+       77  WS-MSG09                      PIC X(60) VALUE
+           'ERRO FECHAMENTO PRODNEW'.
+      *--------------------------------------------------------------*  
+      * VARIAVEIS AUXILIARES
+      *--------------------------------------------------------------*  
+       77  WS-CODPROD-MOV-AUX            PIC X(04).
+      *--------------------------------------------------------------*  
+      * BOOKS DE VARIAVEIS
+      *--------------------------------------------------------------*  
+           COPY VARDATA.
+           COPY VARERRO.
+           COPY VARPROC.
+      *--------------------------------------------------------------*  
+       PROCEDURE                         DIVISION.
+      *--------------------------------------------------------------*  
+       0000-MAIN.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR UNTIL FIM-ARQ-CAD
+                                    AND FIM-ARQ-MOV
+           PERFORM 3000-TERMINO
+           GOBACK
+           .
+      *
+       1000-INICIALIZAR.
+           ACCEPT WS-HORARIO-INICIAL FROM TIME
+      *
+           MOVE 0                        TO WS-CTLIDO-CAD
+                                            WS-CTLIDO-MOV
+                                            WS-CTGRAV-NEW
+                                            WS-CTINC-NEW
+                                            WS-CTSEMMOV
+                                            WS-CTMOVINV
+      *
+           OPEN INPUT PRODCAD
+           IF NOT SUCESSO-CAD
+              MOVE WS-MSG01              TO WS-MSG
+              MOVE FS-PRODCAD            TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           OPEN INPUT PRODMOV
+           IF NOT SUCESSO-MOV
+              MOVE WS-MSG02              TO WS-MSG
+              MOVE FS-PRODMOV            TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           OPEN OUTPUT PRODNEW
+           IF NOT SUCESSO-NEW
+              MOVE WS-MSG03              TO WS-MSG
+              MOVE FS-PRODNEW            TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           PERFORM 1500-LER-PRODCAD
+           PERFORM 1600-LER-PRODMOV
+      *
+           MOVE SPACES                     TO WS-CODPROD-MOV-AUX
+           .
+      *
+       1500-LER-PRODCAD.
+           READ PRODCAD
+      *
+           IF SUCESSO-CAD
+              ADD 1 TO WS-CTLIDO-CAD
+           ELSE
+              IF FIM-ARQ-CAD
+                 MOVE HIGH-VALUES        TO CODPROD-CAD
+              ELSE
+                 MOVE WS-MSG04           TO WS-MSG
+                 MOVE FS-PRODCAD         TO WS-FS
+                 PERFORM 9000-ERRO
+              END-IF
+           END-IF
+           .
+      *
+       1600-LER-PRODMOV.
+           READ PRODMOV
+      *
+           IF SUCESSO-MOV
+              ADD 1 TO WS-CTLIDO-MOV
+           ELSE
+              IF FIM-ARQ-MOV
+                 MOVE HIGH-VALUES        TO CODPROD-MOV
+              ELSE
+                 MOVE WS-MSG05           TO WS-MSG
+                 MOVE FS-PRODMOV         TO WS-FS
+                 PERFORM 9000-ERRO
+              END-IF
+           END-IF
+           .
+      *
+       2000-PROCESSAR.
+           IF CODPROD-CAD < CODPROD-MOV
+              PERFORM 2100-TRATAR-SEM-MOVIMENTO
+           ELSE
+              IF CODPROD-CAD > CODPROD-MOV
+                 PERFORM 2200-TRATAR-SEM-CADASTRO
+              ELSE
+                 PERFORM 2300-TRATAR-COM-MOVIMENTO
+              END-IF
+           END-IF
+           .
+      *
+       2100-TRATAR-SEM-MOVIMENTO.
+           ADD 1                           TO WS-CTSEMMOV
+           MOVE FD-PRODCAD                 TO FD-PRODNEW
+      *
+           PERFORM 2400-GRAVAR-PRODNEW
+      *
+           DISPLAY '(' FD-PRODCAD
+                   ') - PRODUTO SEM MOVIMENTACAO DE ESTOQUE'
+      *
+           PERFORM 1500-LER-PRODCAD
+           .
+      *
+       2200-TRATAR-SEM-CADASTRO.
+           IF WS-CODPROD-MOV-AUX = SPACES
+              AND TIPOMOVIMENTO-MOV = 'E'
+              MOVE CODPROD-MOV             TO CODPROD-NEW
+              MOVE DESCPROD-MOV            TO DESCPROD-NEW
+              MOVE QTDMOVIMENTO-MOV        TO QTDESTOQUE-NEW
+      *
+              PERFORM 2400-GRAVAR-PRODNEW
+           ELSE
+              ADD 1                        TO WS-CTMOVINV
+      *
+              DISPLAY '(' FD-PRODMOV
+                      ') - MOVIMENTO INVALIDO'
+           END-IF
+      *
+           MOVE CODPROD-MOV             TO WS-CODPROD-MOV-AUX
+      *
+           PERFORM 1600-LER-PRODMOV
+      *
+           IF CODPROD-MOV NOT = WS-CODPROD-MOV-AUX
+              MOVE SPACES               TO WS-CODPROD-MOV-AUX
+           END-IF
+           .
+      *
+       2300-TRATAR-COM-MOVIMENTO.
+           MOVE CODPROD-MOV                TO WS-CODPROD-MOV-AUX
+      *
+           EVALUATE TIPOMOVIMENTO-MOV
+              WHEN 'E'
+                  ADD QTDMOVIMENTO-MOV     TO QTDESTOQUE-CAD
+              WHEN 'S'
+                  SUBTRACT QTDMOVIMENTO-MOV FROM QTDESTOQUE-CAD
+              WHEN OTHER
+                 ADD 1 TO WS-CTMOVINV
+      *
+                 DISPLAY '(' FD-PRODMOV
+                         ') - MOVIMENTO INVALIDO'
+           END-EVALUATE
+      *
+           PERFORM 1600-LER-PRODMOV
+      *
+           IF CODPROD-MOV NOT = WS-CODPROD-MOV-AUX
+              MOVE CODPROD-CAD             TO CODPROD-NEW
+              MOVE DESCPROD-CAD            TO DESCPROD-NEW
+              MOVE QTDESTOQUE-CAD          TO QTDESTOQUE-NEW
+      *
+              PERFORM 2400-GRAVAR-PRODNEW
+      *
+              MOVE SPACES                  TO WS-CODPROD-MOV-AUX
+      *
+              PERFORM 1500-LER-PRODCAD
+           END-IF
+           .
+      *
+       2400-GRAVAR-PRODNEW.
+           WRITE FD-PRODNEW
+      *
+           IF NOT SUCESSO-NEW
+              MOVE WS-MSG06                TO WS-MSG
+              MOVE FS-PRODNEW              TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           ADD 1 TO WS-CTGRAV-NEW
+           .
+      *
+       3000-TERMINO.
+           PERFORM 9000-IMPRIME-DATA
+
+           CLOSE PRODCAD
+           IF NOT SUCESSO-CAD
+              MOVE WS-MSG07                TO WS-MSG
+              MOVE FS-PRODCAD              TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           CLOSE PRODMOV
+           IF NOT SUCESSO-MOV
+              MOVE WS-MSG08                TO WS-MSG
+              MOVE FS-PRODMOV              TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           CLOSE PRODNEW
+           IF NOT SUCESSO-NEW
+              MOVE WS-MSG09                TO WS-MSG
+              MOVE FS-PRODNEW              TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           ACCEPT WS-HORARIO-FINAL FROM TIME
+           PERFORM 9000-TEMPO-DE-PROCESSAMENTO
+
+           MOVE WS-CTLIDO-CAD            TO WS-CTLIDO-CAD-F
+           MOVE WS-CTLIDO-MOV            TO WS-CTLIDO-MOV-F
+           MOVE WS-CTGRAV-NEW            TO WS-CTGRAV-NEW-F
+           MOVE WS-CTINC-NEW             TO WS-CTINC-NEW-F
+           MOVE WS-CTMOVINV              TO WS-CTMOVINV-F
+      *
+           DISPLAY '=================================================='
+           DISPLAY 'TOTAL DE PRODUTOS  LIDOS EM PRODCAD..........: '
+                                         WS-CTLIDO-CAD-F
+           DISPLAY 'TOTAL DE MOVIMENTOS LIDOS EM PRODMOV.........: '
+                                         WS-CTLIDO-MOV-F
+           DISPLAY 'TOTAL DE PRODUTOS  GRAVADOS EM PRODNEW.......: '
+                                         WS-CTGRAV-NEW-F
+           DISPLAY 'TOTAL DE PRODUTOS  INCLUIDOS EM PRODNEW......: '
+                                         WS-CTINC-NEW-F
+           DISPLAY 'TOTAL DE MOVIMENTOS INVALIDOS................: '
+                                         WS-CTMOVINV-F
+           DISPLAY 'TEMPO TOTAL DE PROCESSAMENTO.................: '
+                                         WS-TEMPO-PROCESSAMENTO-F
+           DISPLAY '=================================================='
+      *
+      *
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL EX004P13              '
+           DISPLAY '=================================================='
+           .
+      *
+           COPY ROTDATA.
+           COPY ROTERRO.
+           COPY ROTPROSS.

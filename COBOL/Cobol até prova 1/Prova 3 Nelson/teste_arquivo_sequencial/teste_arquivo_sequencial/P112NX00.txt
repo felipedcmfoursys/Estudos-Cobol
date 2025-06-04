@@ -1,0 +1,263 @@
+      *--------------------------------------------------------------*  00010004
+       IDENTIFICATION                      DIVISION.                    00020004
+      *--------------------------------------------------------------*  00030004
+       PROGRAM-ID.                         P112NX00.                    00040008
+       AUTHOR.                             NELSON.                      00050008
+      *                                                                 00060004
+      *--------------------------------------------------------------*  00070004
+       ENVIRONMENT                         DIVISION.                    00080004
+      *--------------------------------------------------------------*  00090004
+       CONFIGURATION                       SECTION.                     00100004
+       SPECIAL-NAMES.                                                   00110004
+           DECIMAL-POINT IS COMMA.                                      00120004
+      *
+       INPUT-OUTPUT                        SECTION.
+       FILE-CONTROL.
+           SELECT EXTTORD  ASSIGN          TO UT-S-EXTTORD
+           FILE STATUS IS FS-EXTTORD
+           .
+           SELECT EXTTD024 ASSIGN          TO UT-S-EXTTD024
+           FILE STATUS IS FS-EXTTD024
+           .
+           SELECT EXTTD025 ASSIGN          TO UT-S-EXTTD025
+           FILE STATUS IS FS-EXTTD025
+           .
+      *--------------------------------------------------------------*  00130004
+       DATA                                DIVISION.                    00140004
+      *--------------------------------------------------------------*  00150004
+       FILE                                SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+       FD  EXTTORD
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTORD
+           .
+       01  FD-EXTTORD                      PIC X(44).
+
+       FD  EXTTD024
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTD024
+           .
+       01  FD-EXTTD024                     PIC X(44).
+
+       FD  EXTTD025
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTD025
+           .
+       01  FD-EXTTD025                     PIC X(44).
+
+      *--------------------------------------------------------------*  00210008
+       WORKING-STORAGE                     SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+      * DECLARACAO DAS VARIAVEIS ESPELHO DOS ARQUIVOS
+      *--------------------------------------------------------------*  00210008
+           COPY ETKORD.
+           COPY ETKD024.
+           COPY ETKD025.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE FILE STATUS
+      *--------------------------------------------------------------*  00210008
+           COPY VARERRO.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE FILE STATUS
+      *--------------------------------------------------------------*  00210008
+       01  FS-EXTTORD                      PIC X(02).
+           88 SUCESSO-ORD                          VALUE '00'.
+           88 FIM-ARQ-ORD                          VALUE '10'.
+
+       01  FS-EXTTD024                     PIC X(02).
+           88 SUCESSO-D024                         VALUE '00'.
+           88 FIM-ARQ-D024                         VALUE '10'.
+
+       01  FS-EXTTD025                     PIC X(02).
+           88 SUCESSO-D025                         VALUE '00'.
+           88 FIM-ARQ-D025                         VALUE '10'.
+
+      *--------------------------------------------------------------*  00210008
+      * COLOCAR AS MENSAGEMS EM VARIAVEIS EH UMA BOA PRATICA
+      *--------------------------------------------------------------*  00210008
+       77  WS-MSG01                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA EXTTORD'.
+       77  WS-MSG02                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA EXTTD024'.
+       77  WS-MSG03                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA EXTTD025'.
+       77  WS-MSG04                        PIC X(60)
+                                                   VALUE
+           'ERRO LEITURA EXTTORD'.
+       77  WS-MSG05                        PIC X(60)
+                                                   VALUE
+           'ERRO GRAVACAO EXTTD024'.
+       77  WS-MSG06                        PIC X(60)
+                                                   VALUE
+           'ERRO GRAVACAO EXTTD025'.
+       77  WS-MSG07                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO EXTTORD'.
+       77  WS-MSG08                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO EXTTD024'.
+       77  WS-MSG09                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO EXTTD025'.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE TRABALHO
+      *--------------------------------------------------------------*  00210008
+       77  WS-CTLIDO                       PIC 9(04)    COMP.           00210208
+       77  WS-CTGRAV-D024                  PIC 9(04)    COMP.           00210308
+       77  WS-CTGRAV-D025                  PIC 9(04)    COMP.           00210308
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS COM MASCARA DE EDICAO (FORMATADAS)
+      *--------------------------------------------------------------*  00210008
+       77  WS-CTLIDO-F                     PIC ZZZ9.                    00210208
+       77  WS-CTGRAV-D024-F                PIC ZZZ9.                    00210308
+       77  WS-CTGRAV-D025-F                PIC ZZZ9.                    00210308
+      *--------------------------------------------------------------*  00211007
+       PROCEDURE                           DIVISION.                    00220004
+      *--------------------------------------------------------------*  00230004
+       0000-MAIN.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+                   UNTIL FIM-ARQ-ORD
+           PERFORM 3000-TERMINO
+           GOBACK
+           .
+      *
+       1000-INICIALIZAR.
+           MOVE 0                          TO WS-CTLIDO
+           MOVE 0                          TO WS-CTGRAV-D024
+           MOVE 0                          TO WS-CTGRAV-D025
+      *
+           OPEN INPUT EXTTORD
+      *
+           IF NOT SUCESSO-ORD
+              MOVE WS-MSG01                TO WS-MSG
+              MOVE FS-EXTTORD              TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           OPEN OUTPUT EXTTD024
+      *
+           IF NOT SUCESSO-D024
+              MOVE WS-MSG02                TO WS-MSG
+              MOVE FS-EXTTD024             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+           OPEN OUTPUT EXTTD025
+
+           IF NOT SUCESSO-D025
+              MOVE WS-MSG03                TO WS-MSG
+              MOVE FS-EXTTD025             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           PERFORM 1500-LER-EXTTORD
+           .
+      *
+       1500-LER-EXTTORD.
+           READ EXTTORD INTO REG-EXTTORD
+      *
+           IF SUCESSO-ORD
+              ADD 1 TO WS-CTLIDO
+           ELSE
+              IF NOT FIM-ARQ-ORD
+                 MOVE WS-MSG04             TO WS-MSG
+                 MOVE FS-EXTTORD           TO WS-FS
+                 PERFORM 9000-ERRO
+              END-IF
+           END-IF
+           .
+      *
+       2000-PROCESSAR.
+      *    DD/MM/AAAA
+      *    1234567890
+      *
+           IF DATA-ORD(07:04) = '2024'
+              MOVE REG-EXTTORD             TO REG-EXTTD024
+              WRITE FD-EXTTD024 FROM REG-EXTTD024
+      *
+              IF NOT SUCESSO-D024
+                 MOVE WS-MSG05             TO WS-MSG
+                 MOVE FS-EXTTD024          TO WS-FS
+                 PERFORM 9000-ERRO
+              END-IF
+      *
+              ADD 1 TO WS-CTGRAV-D024
+           ELSE
+              MOVE REG-EXTTORD             TO REG-EXTTD025
+              WRITE FD-EXTTD025 FROM REG-EXTTD025
+      *
+              IF NOT SUCESSO-D025
+                 MOVE WS-MSG06             TO WS-MSG
+                 MOVE FS-EXTTD025          TO WS-FS
+                 PERFORM 9000-ERRO
+              END-IF
+      *
+              ADD 1 TO WS-CTGRAV-D025
+           END-IF
+      *
+           PERFORM 1500-LER-EXTTORD
+           .
+      *
+       3000-TERMINO.
+           MOVE WS-CTLIDO                  TO WS-CTLIDO-F
+           MOVE WS-CTGRAV-D024             TO WS-CTGRAV-D024-F
+           MOVE WS-CTGRAV-D025             TO WS-CTGRAV-D025-F
+
+      *
+      *                      1         2         3         4         5
+      *             12345678901234567890123456789012345678901234567890
+           DISPLAY "=================================================="
+           DISPLAY "TOTAL DE REGISTROS LIDOS.........: "
+                                           WS-CTLIDO-F
+           DISPLAY "TOTAL DE REGISTROS GRAVADOS 2024.: "
+                                           WS-CTGRAV-D024-F
+           DISPLAY "TOTAL DE REGISTROS GRAVADOS 2025.: "
+                                           WS-CTGRAV-D025-F
+           DISPLAY "=================================================="
+      *
+           CLOSE EXTTORD
+      *
+           IF NOT SUCESSO-ORD
+              MOVE WS-MSG07                TO WS-MSG
+              MOVE FS-EXTTORD              TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           CLOSE EXTTD024
+      *
+           IF NOT SUCESSO-D024
+              MOVE WS-MSG08                TO WS-MSG
+              MOVE FS-EXTTD024             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+      *
+           CLOSE EXTTD025
+      *
+           IF NOT SUCESSO-D025
+              MOVE WS-MSG09                TO WS-MSG
+              MOVE FS-EXTTD025             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+           DISPLAY "=================================================="
+           DISPLAY "==          TERMINO NORMAL DO P112NX00          =="
+           DISPLAY "=================================================="
+           .
+           COPY ROTERRO.

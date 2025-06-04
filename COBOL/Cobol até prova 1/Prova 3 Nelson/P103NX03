@@ -1,0 +1,167 @@
+      *--------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *--------------------------------------------------------------*
+       PROGRAM-ID.                         P103NX03.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT EXTTAO25 ASSIGN TO UT-S-EXTTAO25
+           FILE STATUS IS FS-EXTTAO25
+           .
+           SELECT EXTTDV25 ASSIGN TO UT-S-EXTTDV25
+           FILE STATUS IS FS-EXTTDV25
+           .
+           SELECT EXTTCR25 ASSIGN TO UT-S-EXTTCR25
+           FILE STATUS IS FS-EXTTCR25
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  EXTTAO25
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTAO25
+           .
+       01  FD-EXTTAO25                     PIC X(44).
+
+       FD  EXTTDV25
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTDV25
+           .
+       01  FD-EXTTDV25                     PIC X(44).
+
+       FD  EXTTCR25
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTCR25
+           .
+       01  FD-EXTTCR25                     PIC X(44).
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+      * VARIAVEIS ESPELHO DOS REGISTROS                              *
+      *--------------------------------------------------------------*
+           COPY B103AO25.
+      *    COPY B103DV25.
+      *    COPY B103CR25.
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-EXTTAO25                     PIC X(02).
+           88 SUCESSO-AO25                         VALUE '00'.
+           88 FIM-ARQ-AO25                         VALUE '10'.
+
+       01  FS-EXTTDV25                     PIC X(02).
+           88 SUCESSO-DV25                         VALUE '00'.
+           88 FIM-ARQ-DV25                         VALUE '10'.
+
+       01  FS-EXTTCR25                     PIC X(02).
+           88 SUCESSO-CR25                         VALUE '00'.
+           88 FIM-ARQ-CR25                         VALUE '10'.
+
+      *
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*
+
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+       0000-MAIN.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+                   UNTIL FIM-ARQ-AO25
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           OPEN INPUT EXTTAO25
+
+           IF NOT SUCESSO-AO25
+              DISPLAY 'ERRO ABERTURA EXTTAO25'
+           END-IF
+
+           OPEN OUTPUT EXTTDV25
+
+           IF NOT SUCESSO-DV25
+              DISPLAY 'ERRO ABERTURA EXTTDV25'
+           END-IF
+
+           OPEN OUTPUT EXTTCR25
+
+           IF NOT SUCESSO-CR25
+              DISPLAY 'ERRO ABERTURA EXTTCR25'
+           END-IF
+
+           PERFORM 1500-LER-EXTTAO25
+           .
+
+       1500-LER-EXTTAO25.
+           READ EXTTAO25 INTO REG-B103AO25
+
+           IF NOT SUCESSO-AO25
+               DISPLAY 'ERRO LEITURA EXTTAO25'
+           ELSE
+              IF NOT FIM-ARQ-AO25
+                 DISPLAY 'ERRO FIM DE ARQUIVO EXTTAO25'
+              END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           IF B103AO25-SALDO < 0
+               MOVE B103AO25     TO FD-EXTTDV25
+               WRITE FD-EXTTDV25
+           ELSE
+             IF B103AO25-SALDO >= 0
+               MOVE B103A025     TO FD-EXTTCR25
+               WRITE FD-EXTTCR25
+             END-IF
+           END-IF
+           PERFORM 1500-LER-EXTTAO25
+           .
+
+       3000-TERMINO.
+           CLOSE EXTTAO25
+
+           IF NOT SUCESSO-AO25
+              DISPLAY 'ERRO FECHAMENTO EXTTAO25'
+           END-IF
+
+           CLOSE EXTTDV25
+
+           IF NOT SUCESSO-DV25
+              DISPLAY 'ERRO FECHAMENTO EXTTDV25'
+           END-IF
+
+           CLOSE EXTTCR25
+
+           IF NOT SUCESSO-CR25
+              DISPLAY 'ERRO FECHAMENTO EXTTCR25'
+           END-IF
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL P103NX03              '
+           DISPLAY '=================================================='
+           .
+
+

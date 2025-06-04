@@ -1,0 +1,171 @@
+FS05MNU  DFHMSD TYPE=MAP(MAP,DSECT),                                   X
+               MODE=INOUT,                                             X
+               LANG=COBOL,                                             X
+               STORAGE=AUTO,                                           X
+               CTRL=(FREEKB,ALARM,FRSET),                              X
+               TIOAPFX=YES
+MAPAMNU  DFHMDI SIZE=(24,80),                                          X
+               LINE=1,                                                 X
+               COLUMN=1
+* CAMPO CONSTANTE
+         DFHMDF POS=(01,01),                                           X
+               LENGTH=10,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='TERMINAL.:'
+* CAMPO VARIAVEL
+T1TERM   DFHMDF POS=(01,12),                                           X
+               LENGTH=4,                                               X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='X(04)'
+* CAMPO CONSTANTE
+         DFHMDF POS=(01,33),                                           X
+               LENGTH=14,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='LOJAS MARCOLAS'
+* CAMPO VARIAVEL
+T1DATA   DFHMDF POS=(01,69),                                           X
+               LENGTH=10,                                              X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='X(10)'
+* CAMPO CONSTANTE
+         DFHMDF POS=(02,01),                                           X
+               LENGTH=10,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='TRANSACAO:'
+* CAMPO VARIAVEL
+T1TRAN   DFHMDF POS=(02,12),                                           X
+               LENGTH=04,                                              X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='X(04)'
+* CAMPO CONSTANTE
+         DFHMDF POS=(02,30),                                           X
+               LENGTH=20,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='CADASTRO DE PRODUTOS'
+* CAMPO VARIAVEL
+T1HORA   DFHMDF POS=(02,71),                                           X
+               LENGTH=08,                                              X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='X(08)'
+* CAMPO CONSTANTE
+         DFHMDF POS=(03,01),                                           X
+               LENGTH=79,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='-----------------------------------------------X
+               --------------------------------'
+* CAMPO CONSTANTE
+         DFHMDF POS=(04,01),                                           X
+               LENGTH=05,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='TASK:'
+* CAMPO VARIAVEL
+T1TASK   DFHMDF POS=(04,07),                                           X
+               LENGTH=07,                                              X
+               ATTRB=ASKIP,                                            X
+               PICOUT='9(07)'
+* CAMPO CONSTANTE
+T1MENU   DFHMDF POS=(04,33),                                           X
+               LENGTH=14,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='MENU PRINCIPAL'
+* CAMPO CONSTANTE
+         DFHMDF POS=(04,72),                                           X
+               LENGTH=05,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='FASE:'
+* CAMPO VARIAVEL
+T1FASE   DFHMDF POS=(04,78),                                           X
+               LENGTH=01,                                              X
+               ATTRB=ASKIP,                                            X
+               PICOUT='9(01)'
+* CAMPO CONSTANTE
+         DFHMDF POS=(05,01),                                           X
+               LENGTH=79,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='-----------------------------------------------X
+               --------------------------------'
+* CAMPO CONSTANTE
+         DFHMDF POS=(07,06),                                           X
+               LENGTH=23,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='  VSAM-K5D8         DB2'
+* CAMPO CONSTANTE
+         DFHMDF POS=(08,06),                                           X
+               LENGTH=29,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='-------------   -------------'
+* CAMPO CONSTANTE
+         DFHMDF POS=(09,06),                                           X
+               LENGTH=29,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='A - CONSULTAR   F - CONSULTAR'
+* CAMPO CONSTANTE
+         DFHMDF POS=(10,06),                                           X
+               LENGTH=29,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='B - INCLUIR     G - INCLUIR  '
+* CAMPO CONSTANTE
+         DFHMDF POS=(11,06),                                           X
+               LENGTH=29,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='C - EXCLUIR     H - EXCLUIR  '
+* CAMPO CONSTANTE
+         DFHMDF POS=(12,06),                                           X
+               LENGTH=29,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='D - ALTERAR     I - ALTERAR  '
+* CAMPO CONSTANTE
+         DFHMDF POS=(13,06),                                           X
+               LENGTH=29,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='E - LISTAR      J - LISTAR   '
+* CAMPO CONSTANTE
+         DFHMDF POS=(15,06),                                           X
+               LENGTH=11,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='OPCAO.....:'
+* CAMPO VARIAVEL
+T1OPC    DFHMDF POS=(15,18),                                           X
+               LENGTH=01,                                              X
+               ATTRB=(UNPROT,BRT,FSET),                                X
+               PICOUT='X(01)',                                         X
+               PICIN='X(01)'
+* CAMPO CONSTANTE
+         DFHMDF POS=(15,20),                                           X
+               LENGTH=0,                                               X
+               ATTRB=ASKIP
+* CAMPO CONSTANTE
+         DFHMDF POS=(21,01),                                           X
+               LENGTH=79,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='-----------------------------------------------X
+               --------------------------------'
+* CAMPO VARIAVEL
+T1USR    DFHMDF POS=(22,01),                                           X
+               LENGTH=06,                                              X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='X(06)'
+* CAMPO CONSTANTE
+         DFHMDF POS=(22,15),                                           X
+               LENGTH=57,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='TECLAS VALIDAS: ENTER=PROCESSA TELA  PF3-SAIR  X
+               PF5=LIMPAR'
+* CAMPO CONSTANTE
+         DFHMDF POS=(23,01),                                           X
+               LENGTH=79,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='-----------------------------------------------X
+               --------------------------------'
+* CAMPO CONSTANTE
+         DFHMDF POS=(24,01),                                           X
+               LENGTH=09,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='MENSAGEM:'
+* CAMPO VARIAVEL
+T1MSG    DFHMDF POS=(24,11),                                           X
+               LENGTH=60,                                              X
+               ATTRB=(ASKIP,BRT,FSET),  ´                              X
+               PICOUT='X(60)'
+         DFHMSD TYPE=FINAL
+         END

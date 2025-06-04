@@ -1,0 +1,310 @@
+      *--------------------------------------------------------------*  00010004
+       IDENTIFICATION                      DIVISION.                    00020004
+      *--------------------------------------------------------------*  00030004
+       PROGRAM-ID.                         REF012P2.                    00040008
+       AUTHOR.                             NELSON.                      00050008
+      *                                                                 00060004
+      *--------------------------------------------------------------*  00070004
+       ENVIRONMENT                         DIVISION.                    00080004
+      *--------------------------------------------------------------*  00090004
+       CONFIGURATION                       SECTION.                     00100004
+       SPECIAL-NAMES.                                                   00110004
+           DECIMAL-POINT IS COMMA.                                      00120004
+      *
+       INPUT-OUTPUT                        SECTION.                     00100004
+      *
+       FILE-CONTROL.
+           SELECT RALLYTPO ASSIGN TO UT-S-RALLYTPO
+           FILE STATUS IS FS-RALLYTPO
+           .
+           SELECT RALLYCLA ASSIGN TO UT-S-RALLYCLA
+           FILE STATUS IS FS-RALLYCLA
+           .
+      *--------------------------------------------------------------*  00130004
+       DATA                                DIVISION.                    00140004
+      *--------------------------------------------------------------*  00150004
+       FILE                                SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+       FD  RALLYTPO
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 14 CHARACTERS
+           DATA RECORD IS REG-RALLYTPO
+           .
+           COPY RALLYTPO.
+      *
+       FD  RALLYCLA
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 22 CHARACTERS
+           DATA RECORD IS REG-RALLYCLA
+           .
+           COPY RALLYCLA.
+      *
+      *--------------------------------------------------------------*  00210008
+       WORKING-STORAGE                     SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*  00210008
+       77  FS-RALLYTPO                     PIC X(02).                   00210108
+       77  FS-RALLYCLA                     PIC X(02).                   00210108
+      *
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*  00210008
+       77  WS-MSG                          PIC X(60).                   00210208
+       77  WS-FS                           PIC X(02).                   00210308
+      *
+       77  WS-CTLIDO                       PIC 9(04)       COMP.        00210308
+       77  WS-CTGRAV                       PIC 9(04)       COMP.        00210308
+      *
+       77  WS-DIFERENCA                    PIC 9(03)V99 COMP.
+       77  WS-PONTOS                       PIC 9(05)V99 COMP.
+       77  WS-PONTOS-ETP1                  PIC 9(05)V99 COMP.
+       77  WS-PONTOS-ETP2                  PIC 9(05)V99 COMP.
+       77  WS-PONTOS-ETP3                  PIC 9(05)V99 COMP.
+       77  WS-TOTAL-PONTOS                 PIC 9(06)V99 COMP.
+      *
+       77  WS-PONTOS-1-LUGAR               PIC 9(06)V99 COMP
+                                                   VALUE 0.
+       77  WS-PONTOS-2-LUGAR               PIC 9(06)V99 COMP
+                                                   VALUE 0.
+       77  WS-PONTOS-3-LUGAR               PIC 9(06)V99 COMP
+                                                   VALUE 0.
+       77  WS-NUMINSCRICAO-1-LUGAR         PIC 9(05).
+       77  WS-NUMINSCRICAO-2-LUGAR         PIC 9(05).
+       77  WS-NUMINSCRICAO-3-LUGAR         PIC 9(05).
+      *--------------------------------------------------------------*
+      * VARIAVEIS COM MASCARA DE EDICAO (FORMATADAS)                 *
+      *--------------------------------------------------------------*  
+      *
+       77  WS-CTLIDO-F                     PIC ZZZ9.                    
+       77  WS-CTGRAV-F                     PIC ZZZ9.                   
+      *
+       77  WS-PONTOS-1-LUGAR-F             PIC ZZZ.ZZ9,99.
+       77  WS-PONTOS-2-LUGAR-F             PIC ZZZ.ZZ9,99.
+       77  WS-PONTOS-3-LUGAR-F             PIC ZZZ.ZZ9,99.
+      *
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE MENSAGENS                                      *
+      *--------------------------------------------------------------*  00210008
+       77  WS-MSG01                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA RALLYTPO'.
+       77  WS-MSG02                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA RALLYCLA'.
+       77  WS-MSG03                        PIC X(60)
+                                                   VALUE
+           'ERRO LEITURA RALLYTPO'.
+       77  WS-MSG04                        PIC X(60)
+                                                   VALUE
+           'ERRO GRAVACAO RALLYCLA'.
+       77  WS-MSG05                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO RALLYTPO'.
+       77  WS-MSG06                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO RALLYCLA'.
+      *--------------------------------------------------------------*  00211007
+       LINKAGE                             SECTION.                     00220004
+      *--------------------------------------------------------------*  00230004
+       01  LS-REG-LINKAGE.
+           05 LS-REG-LENGTH PIC S9(04) COMP.
+           05 LS-REG-DADOS.
+              10 LS-TP-ETP1     PIC 9(03)V99.
+              10 LS-TP-ETP2     PIC 9(03)V99.
+              10 LS-TP-ETP3     PIC 9(03)V99.
+      *--------------------------------------------------------------*  00211007
+       PROCEDURE                           DIVISION                     00220004
+                                           USING LS-REG-LINKAGE.
+      *--------------------------------------------------------------*  00230004
+       0000-REF012P2.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+                   UNTIL FS-RALLYTPO = '10'
+           PERFORM 3000-TERMINO
+           GOBACK
+           .
+      *
+       1000-INICIALIZAR.
+           MOVE ZEROS                      TO WS-CTLIDO
+                                              WS-CTGRAV
+           OPEN INPUT RALLYTPO
+      *
+           IF FS-RALLYTPO NOT = '00'
+              MOVE WS-MSG01                TO WS-MSG
+              MOVE FS-RALLYTPO             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+      *
+           OPEN OUTPUT RALLYCLA
+      *
+           IF FS-RALLYCLA NOT = '00'
+              MOVE WS-MSG02                TO WS-MSG
+              MOVE FS-RALLYCLA             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+      *
+           PERFORM 1500-LER-RALLYTPO
+           .
+      *
+       1500-LER-RALLYTPO.
+           READ RALLYTPO
+      *
+           IF FS-RALLYTPO = '00'
+              ADD 1 TO WS-CTLIDO
+           ELSE
+              IF FS-RALLYTPO NOT = '10'
+                 MOVE WS-MSG03             TO WS-MSG
+                 MOVE FS-RALLYTPO          TO WS-FS
+                 GO TO 9000-ERRO
+              END-IF
+           END-IF
+           .
+      *
+       2000-PROCESSAR.
+      * REFINAMENTO SUCESSIVO
+           PERFORM 2100-CALCULAR-PONTOS
+           PERFORM 2200-DETERMINA-CLASSIFICACAO
+           PERFORM 2300-GRAVAR-RALLYCLA
+           PERFORM 1500-LER-RALLYTPO
+           .
+       2100-CALCULAR-PONTOS.
+           MOVE 0                          TO WS-TOTAL-PONTOS
+      *
+      *    PONTOS DA ETAPA 1
+      *
+           COMPUTE WS-DIFERENCA = LS-TP-ETP1 - TEMPO-ETP1
+           PERFORM 2150-CALCULA-PONTOS-ETAPA
+           MOVE WS-PONTOS                  TO WS-PONTOS-ETP1
+      *
+      *    PONTOS DA ETAPA 2
+      *
+           COMPUTE WS-DIFERENCA = LS-TP-ETP2 - TEMPO-ETP2
+           PERFORM 2150-CALCULA-PONTOS-ETAPA
+           MOVE WS-PONTOS                  TO WS-PONTOS-ETP2
+      *
+      *    PONTOS DA ETAPA 3
+      *
+           COMPUTE WS-DIFERENCA = LS-TP-ETP3 - TEMPO-ETP3
+           PERFORM 2150-CALCULA-PONTOS-ETAPA
+           MOVE WS-PONTOS                  TO WS-PONTOS-ETP3
+      *
+      *    TOTAL DE PONTOS DA EQUIPE
+      *
+           ADD WS-PONTOS-ETP1
+               WS-PONTOS-ETP2
+               WS-PONTOS-ETP3              TO WS-TOTAL-PONTOS
+           .
+      *
+       2150-CALCULA-PONTOS-ETAPA.
+           IF WS-DIFERENCA < 3
+              MOVE 100                     TO WS-PONTOS
+           ELSE
+              IF WS-DIFERENCA <= 5
+                 MOVE 80                   TO WS-PONTOS
+              ELSE
+                 COMPUTE WS-PONTOS = 80 - (WS-DIFERENCA - 5) / 5
+              END-IF
+           END-IF
+           .
+      *
+       2200-DETERMINA-CLASSIFICACAO.
+           IF WS-TOTAL-PONTOS > WS-PONTOS-1-LUGAR
+              MOVE WS-PONTOS-2-LUGAR       TO WS-PONTOS-3-LUGAR
+              MOVE WS-NUMINSCRICAO-2-LUGAR TO WS-NUMINSCRICAO-3-LUGAR
+      *
+              MOVE WS-PONTOS-1-LUGAR       TO WS-PONTOS-2-LUGAR
+              MOVE WS-NUMINSCRICAO-1-LUGAR TO WS-NUMINSCRICAO-2-LUGAR
+      *
+              MOVE WS-TOTAL-PONTOS         TO WS-PONTOS-1-LUGAR
+              MOVE NUMINSCRICAO-T          TO WS-NUMINSCRICAO-1-LUGAR
+           ELSE
+              IF WS-TOTAL-PONTOS > WS-PONTOS-2-LUGAR
+                 MOVE WS-PONTOS-2-LUGAR       TO WS-PONTOS-3-LUGAR
+                 MOVE WS-NUMINSCRICAO-2-LUGAR TO WS-NUMINSCRICAO-3-LUGAR
+      *
+                 MOVE WS-TOTAL-PONTOS         TO WS-PONTOS-2-LUGAR
+                 MOVE NUMINSCRICAO-T          TO WS-NUMINSCRICAO-2-LUGAR
+              ELSE
+                 IF WS-TOTAL-PONTOS > WS-PONTOS-3-LUGAR
+                    MOVE WS-TOTAL-PONTOS      TO WS-PONTOS-3-LUGAR
+                    MOVE NUMINSCRICAO-T       TO WS-NUMINSCRICAO-3-LUGAR
+                 END-IF
+              END-IF
+           END-IF
+           .
+      *
+       2300-GRAVAR-RALLYCLA.
+           MOVE NUMINSCRICAO-T             TO NUMINSCRICAO-C
+           MOVE WS-PONTOS-ETP1             TO PONTOS-ETP1
+           MOVE WS-PONTOS-ETP2             TO PONTOS-ETP2
+           MOVE WS-PONTOS-ETP3             TO PONTOS-ETP3
+           MOVE WS-TOTAL-PONTOS            TO TOTAL-PONTOS
+
+           WRITE REG-RALLYCLA
+
+           IF FS-RALLYCLA NOT = '00'
+              MOVE WS-MSG04                TO WS-MSG
+              MOVE FS-RALLYCLA             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+
+           ADD 1                           TO WS-CTGRAV
+           .
+      *
+       3000-TERMINO.
+           MOVE WS-CTLIDO                  TO WS-CTLIDO-F
+           MOVE WS-CTGRAV                  TO WS-CTGRAV-F
+      *
+           MOVE WS-PONTOS-1-LUGAR          TO WS-PONTOS-1-LUGAR-F
+           MOVE WS-PONTOS-2-LUGAR          TO WS-PONTOS-2-LUGAR-F
+           MOVE WS-PONTOS-3-LUGAR          TO WS-PONTOS-3-LUGAR-F
+      *
+           DISPLAY '=================================================='
+           DISPLAY 'TOTAL DE EQUIPES LIDAS........: ' WS-CTLIDO-F
+           DISPLAY 'TOTAL DE EQUIPES GRAVADAS.....: ' WS-CTGRAV-F
+           DISPLAY '=================================================='
+           DISPLAY '=================================================='
+           DISPLAY '            *** PRIMEIRO LUGAR ***                '
+           DISPLAY '=================================================='
+           DISPLAY ' EQUIPE............: ' WS-NUMINSCRICAO-1-LUGAR
+           DISPLAY ' TOTAL DE PONTOS...: ' WS-PONTOS-1-LUGAR-F
+           DISPLAY '=================================================='
+           DISPLAY '            *** SEGUNDO  LUGAR ***                '
+           DISPLAY '=================================================='
+           DISPLAY ' EQUIPE............: ' WS-NUMINSCRICAO-2-LUGAR
+           DISPLAY ' TOTAL DE PONTOS...: ' WS-PONTOS-2-LUGAR-F
+           DISPLAY '=================================================='
+           DISPLAY '            *** TERCEIRO LUGAR ***                '
+           DISPLAY '=================================================='
+           DISPLAY ' EQUIPE............: ' WS-NUMINSCRICAO-3-LUGAR
+           DISPLAY ' TOTAL DE PONTOS...: ' WS-PONTOS-3-LUGAR-F
+           DISPLAY '=================================================='
+      *
+           CLOSE RALLYTPO
+      *
+           IF FS-RALLYTPO NOT = '00'
+              MOVE WS-MSG05                TO WS-MSG
+              MOVE FS-RALLYTPO             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+      *
+           CLOSE RALLYCLA
+      *
+           IF FS-RALLYCLA NOT = '00'
+              MOVE WS-MSG06                TO WS-MSG
+              MOVE FS-RALLYCLA             TO WS-FS
+              GO TO 9000-ERRO
+           END-IF
+      *
+           DISPLAY ' '
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL REF012P2              '
+           DISPLAY '=================================================='
+           .
+      *
+           COPY ROTERRO.

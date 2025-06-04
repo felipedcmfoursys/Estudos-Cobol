@@ -1,0 +1,34 @@
+criar jcl para sort dos clientes
+jeordcpf
+
+separacao 2024 2025
+criar programa para separacao dos anos
+booklib para espelho 
+entrada leitura gravacao
+saida exttdo24
+saida exttdo25
+
+
+separar devedores e credores 2024
+leitura por caractere, definir as variaveis com tamanho exato
+exttao24 
+saldo > 0
+gravacao de 2 arquivos 
+credores e devedores
+exttcr24
+exttdv24
+
+
+separar devedores e credores 2025
+leitura por caractere, definir as variaveis com tamanho exato
+exttao25 
+saldo > 0
+gravacao de 2 arquivo
+credores e devedores
+exttcr25
+exttdv25
+
+oferta de emprestimo, para devedores de mais de 5000
+
+oferta de investimento para mais de 5000
+SELIC

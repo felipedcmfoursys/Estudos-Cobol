@@ -1,0 +1,179 @@
+      *--------------------------------------------------------------*  
+       IDENTIFICATION                      DIVISION.                    
+      *--------------------------------------------------------------*  
+       PROGRAM-ID.                         CEX03P01.                    
+       AUTHOR.                             FELIPE.                      
+      *                                                                 
+      *--------------------------------------------------------------*  
+       ENVIRONMENT                         DIVISION.       
+      *--------------------------------------------------------------*  
+       DATA                                DIVISION.                    
+      *--------------------------------------------------------------*  
+       FILE                                SECTION.                     
+      *--------------------------------------------------------------*  
+       WORKING-STORAGE                     SECTION.                    
+      *--------------------------------------------------------------*  
+	  * 
+      * MENSAGEM DE ENTRADA
+      *
+       01  WS-ENTRADA.
+           05 WS-TRANSACAO-E               PIC X(04).
+           05 FILLER                       PIC X(01).
+           05 WS-CODIGO-GI                 PIC 9(01).
+
+      * MENSAGEM DE SAIDA
+
+       01  WS-SAIDA.
+           03 WS-TEXTO-GI                  PIC X(15).
+           03 FILLER                       PIC X(03)
+                                               VALUE " : ".
+           03 WS-DATA-FORMATADA            PIC X(10).
+           03 FILLER                       PIC X(03)
+                                               VALUE " - ".
+           03 WS-HORA-FORMATADA            PIC X(08).                                    
+
+      * VARIAVEIS AUXILIARES                                         
+ 
+       77  WS-ABSTIME                      PIC S9(15) COMP-3.                                 
+       77  WS-RESP                         PIC S9(08) COMP.          
+       77  WS-LENGTH                       PIC S9(04) COMP.             
+       77  WS-MENSAGEM-ERRO                PIC  X(80).             
+      *--------------------------------------------------------------*  
+       PROCEDURE                           DIVISION.                    
+      *--------------------------------------------------------------* 
+        
+      * LIMPAR A VARIAVELS DE ENTRADA - CASO HAJA CHAMADAS CONSECUTIVAS
+
+           INITIALIZE WS-ENTRADA
+
+      * RECEBENDO A MESANGEM DE ENTRADA
+       
+           MOVE 6                          TO WS-LENGTH
+               
+           EXEC CICS RECEIVE
+               INTO    (WS-ENTRADA)
+               LENGTH  (WS-LENGTH)
+               RESP    (WS-RESP)
+           END-EXEC
+
+      * TESTANDO O RESP DO RECEIVE
+       
+           IF WS-RESP = DFHRESP(NORMAL) OR DFHRESP (EOC)
+               CONTINUE
+           ELSE
+               IF WS-RESP = DFHRESP(LENGERR)
+                   PERFORM 9000-ERRO-TAMANHO
+               ELSE
+                   PERFORM 9100-ERRO-GENERICO
+               END-IF
+           END-IF
+
+      * PROCESSANDO A MENSAGEM DE ENTRADA
+      *                  123456789012345
+           EVALUATE WS-CODIGO-GI
+               WHEN '1'
+                   MOVE 'FUNDAMENTAL  '    TO WS-TEXTO-GI
+               WHEN '2'
+                   MOVE 'MEDIO        '    TO WS-TEXTO-GI
+               WHEN '3'
+                   MOVE 'TECNOLOGO    '    TO WS-TEXTO-GI
+               WHEN '4'
+                   MOVE 'LICENCIATURA '    TO WS-TEXTO-GI
+               WHEN '5'
+                   MOVE 'BACHAREL     '    TO WS-TEXTO-GI
+               WHEN '6'
+                   MOVE 'ESPECIALISTA '    TO WS-TEXTO-GI
+               WHEN '7'
+                   MOVE 'MESTRE       '    TO WS-TEXTO-GI
+               WHEN '8'
+                   MOVE 'DOUTOR       '    TO WS-TEXTO-GI
+               WHEN '9'
+                   MOVE 'POS-DOUTORADO'    TO WS-TEXTO-GI
+               WHEN '0'
+                   MOVE 'Ze RUELA     '    TO WS-TEXTO-GI
+           END-EVALUATE
+
+      * RECEBENDO E FORMATANDO DATA E HORA
+
+           EXEC CICS ASKTIME
+               ABSTIME(WS-ABSTIME)
+           END-EXEC
+
+           EXEC CICS FORMATTIME
+               ABSTIME(WS-ABSTIME)
+               DDMMYYYY(WS-DATA-FORMATADA)
+               DATESEP('/')
+               TIME(WS-HORA-FORMATADA)
+               TIMESEP(':')
+               RESP (WS-RESP)
+           END-EXEC
+
+      * TESTANDO O RESP DO FORMATTIME
+
+           IF WS-RESP =DFHRESP(NORMAL)
+               CONTINUE
+           ELSE
+               PERFORM 9100-ERRO-GENERICO
+           END-IF 
+
+      * EXIBINDO A MENSAGEM DE SAIDA
+
+           MOVE 39                         TO WS-LENGTH
+
+           EXEC CICS SEND TEXT
+               FROM    (WS-SAIDA)
+               LENGTH  (WS-LENGTH)
+               RESP    (WS-RESP)
+               ERASE   ALARM
+           END-EXEC
+
+      * TESTANDO O RESP DO SEND
+
+           IF WS-RESP = DFHRESP(NORMAL)
+               CONTINUE
+           ELSE
+               PERFORM 9100-ERRO-GENERICO
+           END-IF
+
+      * ENCERRANDO A TRANSACAO E RETORNANDO AO CICS       
+
+           EXEC CICS RETURN
+           END-EXEC
+           .
+
+      * ROTINA PARA TRATAR ERRO DE TAMANHO NA MENSAGEM DE ENTRADA
+       9000-ERRO-TAMANHO.
+           MOVE 80                         TO WS-LENGTH
+           MOVE 'SINTAXE INCORRETA, USAR: GI99 N'
+                                           TO WS-MENSAGEM-ERRO
+
+           EXEC CICS SEND
+               FROM (WS-MENSAGEM-ERRO)
+               LENGTH (WS-LENGTH)
+      *        ERASE ALARM
+           END-EXEC
+
+      * ENCERRANDO O PROGRAMA E RETORNANDO AO CICS
+
+           EXEC CICS RETURN
+           END-EXEC
+           .
+
+      * ROTINA PARA DEMAIS ERROS
+
+       9100-ERRO-GENERICO.
+           MOVE 80                         TO WS-LENGTH
+           MOVE 'OCORRESTE UM ERRO ESPERADO, AFINAL TU ERES UMA MULA'
+                                           TO WS-MENSAGEM-ERRO
+
+           EXEC CICS SEND
+               FROM (WS-MENSAGEM-ERRO)
+               LENGTH (WS-LENGTH)
+      *        ERASE ALARM
+           END-EXEC
+
+      * ENCERRANDO O PROGRAMA E RETORNANDO AO CICS
+
+           EXEC CICS RETURN
+           END-EXEC
+           .                     

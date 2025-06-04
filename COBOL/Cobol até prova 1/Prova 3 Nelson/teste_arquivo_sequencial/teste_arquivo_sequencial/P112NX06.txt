@@ -1,0 +1,260 @@
+      *--------------------------------------------------------------*  00010004
+       IDENTIFICATION                      DIVISION.                    00020004
+      *--------------------------------------------------------------*  00030004
+       PROGRAM-ID.                         P112NX06.                    00040008
+       AUTHOR.                             NELSON.                      00050008
+      *                                                                 00060004
+      *--------------------------------------------------------------*  00070004
+       ENVIRONMENT                         DIVISION.                    00080004
+      *--------------------------------------------------------------*  00090004
+       CONFIGURATION                       SECTION.                     00100004
+       SPECIAL-NAMES.                                                   00110004
+           DECIMAL-POINT IS COMMA.                                      00120004
+      *
+       INPUT-OUTPUT                        SECTION.
+       FILE-CONTROL.
+           SELECT EXTTCR25 ASSIGN          TO UT-S-EXTTCR25
+           FILE STATUS IS FS-EXTTCR25
+           .
+           SELECT INVE2025 ASSIGN          TO UT-S-INVE2025
+           FILE STATUS IS FS-INVE2025
+           .
+      *--------------------------------------------------------------*  00130004
+       DATA                                DIVISION.                    00140004
+      *--------------------------------------------------------------*  00150004
+       FILE                                SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+       FD  EXTTCR25
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTCR25
+           .
+       01  FD-EXTTCR25                     PIC X(44).
+
+       FD  INVE2025
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 80 CHARACTERS
+           DATA RECORD IS FD-INVE2025
+           .
+       01  FD-INVE2025                     PIC X(80).
+
+      *--------------------------------------------------------------*  00210008
+       WORKING-STORAGE                     SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+      * DECLARACAO DAS VARIAVEIS ESPELHO DOS ARQUIVOS
+      *--------------------------------------------------------------*  00210008
+           COPY B112CR25.
+           COPY B112IN25.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE FILE STATUS
+      *--------------------------------------------------------------*  00210008
+           COPY VARERRO.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE FILE STATUS
+      *--------------------------------------------------------------*  00210008
+       01  FS-EXTTCR25                     PIC X(02).
+           88 SUCESSO-CR25                         VALUE '00'.
+           88 FIM-ARQ-CR25                         VALUE '10'.
+
+       01  FS-INVE2025                     PIC X(02).
+           88 SUCESSO-IN25                         VALUE '00'.
+           88 FIM-ARQ-IN25                         VALUE '10'.
+
+      *--------------------------------------------------------------*  00210008
+      * COLOCAR AS MENSAGEMS EM VARIAVEIS EH UMA BOA PRATICA
+      *--------------------------------------------------------------*  00210008
+       77  WS-MSG01                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA EXTTCR25'.
+       77  WS-MSG02                        PIC X(60)
+                                                   VALUE
+           'ERRO ABERTURA INVE2025'.
+       77  WS-MSG03                        PIC X(60)
+                                                   VALUE
+           'ERRO LEITURA EXTTCR25'.
+       77  WS-MSG04                        PIC X(60)
+                                                   VALUE
+           'ERRO GRAVACAO INVE2025'.
+       77  WS-MSG05                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO EXTTCR25'.
+       77  WS-MSG06                        PIC X(60)
+                                                   VALUE
+           'ERRO FECHAMENTO INVE2025'.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE TRABALHO
+      *--------------------------------------------------------------*  00210008
+       77  WS-CTLIDO                       PIC 9(04)
+                                                   COMP.
+       77  WS-CTGRAV                       PIC 9(04)
+                                                   COMP.
+       01  WS-DATA-SISTEMA.
+           05 WS-ANO                       PIC X(02).
+           05 WS-MES                       PIC X(02).
+           05 WS-DIA                       PIC X(02).
+
+       01  WS-DATA-PROCESSAMENTO.
+           05 WS-DIA                       PIC X(02).
+           05 FILLER                       PIC X(01)
+                                                   VALUE '/'.
+           05 WS-MES                       PIC X(02).
+           05 FILLER                       PIC X(03)
+                                                   VALUE '/20'.
+           05 WS-ANO                       PIC X(02).
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS COM MASCARA DE EDICAO (FORMATADAS)
+      *--------------------------------------------------------------*  00210008
+       77  WS-CTLIDO-F                     PIC ZZZ9.                    00210208
+       77  WS-CTGRAV-F                     PIC ZZZ9.                    00210308
+      *--------------------------------------------------------------*  00211007
+       PROCEDURE                           DIVISION.                    00220004
+      *--------------------------------------------------------------*  00230004
+       0000-MAIN.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+                   UNTIL FIM-ARQ-CR25
+           PERFORM 3000-TERMINO
+           GOBACK
+           .
+      *
+       1000-INICIALIZAR.
+           ACCEPT WS-DATA-SISTEMA FROM DATE
+
+           MOVE CORR WS-DATA-SISTEMA       TO WS-DATA-PROCESSAMENTO
+
+           MOVE 0                          TO WS-CTLIDO
+           MOVE 0                          TO WS-CTGRAV
+      *
+           OPEN INPUT EXTTCR25
+      *
+           IF NOT SUCESSO-CR25
+              MOVE WS-MSG01                TO WS-MSG
+              MOVE FS-EXTTCR25             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+           OPEN OUTPUT INVE2025
+
+           IF NOT SUCESSO-IN25
+              MOVE WS-MSG03                TO WS-MSG
+              MOVE FS-INVE2025             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+      *
+           PERFORM 1500-LER-EXTTCR25
+           .
+      *
+       1500-LER-EXTTCR25.
+           READ EXTTCR25 INTO REG-EXTTCR25
+
+           IF SUCESSO-CR25
+              ADD 1 TO WS-CTLIDO
+           ELSE
+              IF NOT FIM-ARQ-CR25
+                 MOVE WS-MSG03             TO WS-MSG
+                 MOVE FS-EXTTCR25          TO WS-FS
+                 PERFORM 9000-ERRO
+              END-IF
+           END-IF
+           .
+      *
+       2000-PROCESSAR.
+           IF  B112CR25-SALDO >= 5000
+               PERFORM 2100-INVESTIMENTO-1
+           ELSE
+               IF B112CR25-SALDO >= 30000
+                  PERFORM 2200-INVESTIMENTO-2
+               ELSE
+                  PERFORM 2300-INVESTIMENTO-3
+               END-IF
+           END-IF
+
+           PERFORM 1500-LER-EXTTCR25
+           .
+      *
+       2100-INVESTIMENTO-1.
+           MOVE 'POUPANCA'                 TO INVESTIMENTO
+           MOVE 10,68                      TO TAXARETORNOPORANO
+           COMPUTE VALORFINAL = B112CR25-SALDO * 1,1068
+           COMPUTE LUCROESTIMADO = VALORFINAL - B112CR25-SALDO
+           PERFORM 2500-GRAVAR-INVE2025
+           .
+      *
+       2200-INVESTIMENTO-2.
+           MOVE 'SELIC 6M'                 TO INVESTIMENTO
+           MOVE 11,72                      TO TAXARETORNOPORANO
+           COMPUTE VALORFINAL = B112CR25-SALDO * 1,1172
+           COMPUTE LUCROESTIMADO = VALORFINAL - B112CR25-SALDO
+           PERFORM 2500-GRAVAR-INVE2025
+           .
+      *
+       2300-INVESTIMENTO-3.
+           MOVE 'SELIC18M'                 TO INVESTIMENTO
+           MOVE 13,12                      TO TAXARETORNOPORANO
+           COMPUTE VALORFINAL = B112CR25-SALDO * 1,1312
+           COMPUTE LUCROESTIMADO = VALORFINAL - B112CR25-SALDO
+           PERFORM 2500-GRAVAR-INVE2025
+           .
+      *
+      *
+       2500-GRAVAR-INVE2025.
+           MOVE B112CR25-CPF               TO CPF-INVE2025
+           MOVE B112CR25-NOME              TO NOME-INVE2025
+           MOVE WS-DATA-PROCESSAMENTO      TO DATA-INVE2025
+           MOVE B112CR25-SALDO             TO SALDO-INVE2025
+
+           WRITE FD-INVE2025 FROM REG-INVE2025
+
+           IF NOT SUCESSO-IN25
+              MOVE WS-MSG04                TO WS-MSG
+              MOVE FS-INVE2025             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+           ADD 1                           TO WS-CTGRAV
+           .
+      *
+       3000-TERMINO.
+           MOVE WS-CTLIDO                  TO WS-CTLIDO-F
+           MOVE WS-CTGRAV                  TO WS-CTGRAV-F
+
+      *
+      *                      1         2         3         4         5
+      *             12345678901234567890123456789012345678901234567890
+           DISPLAY "=================================================="
+           DISPLAY "TOTAL DE REGISTROS LIDOS.........: "
+                                           WS-CTLIDO-F
+           DISPLAY "TOTAL DE REGISTROS GRAVADOS......: "
+                                           WS-CTGRAV-F
+           DISPLAY "=================================================="
+      *
+           CLOSE EXTTCR25
+      *
+           IF NOT SUCESSO-CR25
+              MOVE WS-MSG05                TO WS-MSG
+              MOVE FS-EXTTCR25             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+      *
+           CLOSE INVE2025
+      *
+           IF NOT SUCESSO-IN25
+              MOVE WS-MSG06                TO WS-MSG
+              MOVE FS-INVE2025             TO WS-FS
+              PERFORM 9000-ERRO
+           END-IF
+
+           DISPLAY "=================================================="
+           DISPLAY "==          TERMINO NORMAL DO P112NX06          =="
+           DISPLAY "=================================================="
+           .
+           COPY ROTERRO.

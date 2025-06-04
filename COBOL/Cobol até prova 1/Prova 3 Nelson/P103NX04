@@ -1,0 +1,168 @@
+      *--------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *--------------------------------------------------------------*
+       PROGRAM-ID.                         P103NX04.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT EXTTAO24 ASSIGN TO UT-S-EXTTAO24
+           FILE STATUS IS FS-EXTTAO24
+           .
+           SELECT EXTTDV24 ASSIGN TO UT-S-EXTTDV24
+           FILE STATUS IS FS-EXTTDV24
+           .
+           SELECT EXTTCR24 ASSIGN TO UT-S-EXTTCR24
+           FILE STATUS IS FS-EXTTCR24
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  EXTTAO24
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTAO24
+           .
+       01  FD-EXTTAO24                     PIC X(44).
+
+       FD  EXTTDV24
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTDV24
+           .
+       01  FD-EXTTDV24                     PIC X(44).
+
+       FD  EXTTCR24
+           LABEL RECORD IS STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTCR24
+           .
+       01  FD-EXTTCR24                     PIC X(44).
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+      * VARIAVEIS ESPELHO DOS REGISTROS                              *
+      *--------------------------------------------------------------*
+           COPY B103AO24.
+      *    COPY B103DV24.
+      *    COPY B103CR24.
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-EXTTAO24                     PIC X(02).
+           88 SUCESSO-AO24                         VALUE '00'.
+           88 FIM-ARQ-AO24                         VALUE '10'.
+
+       01  FS-EXTTDV24                     PIC X(02).
+           88 SUCESSO-DV24                         VALUE '00'.
+           88 FIM-ARQ-DV24                         VALUE '10'.
+
+       01  FS-EXTTCR24                     PIC X(02).
+           88 SUCESSO-CR24                         VALUE '00'.
+           88 FIM-ARQ-CR24                         VALUE '10'.
+
+      *
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE TRABALHO                                        *
+      *--------------------------------------------------------------*
+
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+       0000-MAIN.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+                   UNTIL FIM-ARQ-AO24
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           OPEN INPUT EXTTAO24
+
+           IF NOT SUCESSO-AO24
+              DISPLAY 'ERRO ABERTURA EXTTAO24'
+           END-IF
+
+           OPEN OUTPUT EXTTDV24
+
+           IF NOT SUCESSO-DV24
+              DISPLAY 'ERRO ABERTURA EXTTDV24'
+           END-IF
+
+           OPEN OUTPUT EXTTCR24
+
+           IF NOT SUCESSO-CR24
+              DISPLAY 'ERRO ABERTURA EXTTCR24'
+           END-IF
+
+           PERFORM 1500-LER-EXTTAO24
+           .
+
+       1500-LER-EXTTAO24.
+           READ EXTTAO24 INTO REG-B103AO24
+
+           IF NOT SUCESSO-AO24
+               DISPLAY 'ERRO LEITURA EXTTAO24'
+           ELSE
+              IF NOT FIM-ARQ-AO24
+                 DISPLAY 'ERRO FIM DE ARQUIVO EXTTAO24'
+                 DISPLAY FS-EXTTAO24
+              END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           IF B103AO24-SALDO < 0
+               MOVE REG-B103AO24     TO FD-EXTTDV24
+               WRITE FD-EXTTDV24
+           ELSE
+             IF  B103AO24-SALDO >= 0
+               MOVE REG-B103AO24     TO FD-EXTTCR24
+               WRITE FD-EXTTCR24
+             END-IF
+           END-IF
+           PERFORM 1500-LER-EXTTAO24
+           .
+
+       3000-TERMINO.
+           CLOSE EXTTAO24
+
+           IF NOT SUCESSO-AO24
+              DISPLAY 'ERRO FECHAMENTO EXTTAO24'
+           END-IF
+
+           CLOSE EXTTDV24
+
+           IF NOT SUCESSO-DV24
+              DISPLAY 'ERRO FECHAMENTO EXTTDV24'
+           END-IF
+
+           CLOSE EXTTCR24
+
+           IF NOT SUCESSO-CR24
+              DISPLAY 'ERRO FECHAMENTO EXTTCR24'
+           END-IF
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL P103NX03              '
+           DISPLAY '=================================================='
+           .
+
+

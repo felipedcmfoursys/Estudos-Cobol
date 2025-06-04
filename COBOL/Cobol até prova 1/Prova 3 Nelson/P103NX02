@@ -1,0 +1,156 @@
+      *--------------------------------------------------------------*  00010004
+       IDENTIFICATION                      DIVISION.                    00020004
+      *--------------------------------------------------------------*  00030004
+       PROGRAM-ID.                         P101NX02.                    00040008
+       AUTHOR.                             FELIPE.                      00050008
+      *                                                                 00060004
+      *--------------------------------------------------------------*  00070004
+       ENVIRONMENT                         DIVISION.                    00080004
+      *--------------------------------------------------------------*  00090004
+       CONFIGURATION                       SECTION.                     00100004
+       SPECIAL-NAMES.                                                   00110004
+           DECIMAL-POINT IS COMMA.                                      00120004
+      *
+       INPUT-OUTPUT                        SECTION.
+       FILE-CONTROL.
+           SELECT EXTTDO24 ASSIGN          TO UT-S-EXTTDO24
+           FILE STATUS IS FS-EXTTDO24
+           .
+           SELECT EXTTAO24 ASSIGN          TO UT-S-EXTTAO24
+           FILE STATUS IS FS-EXTTAO24
+           .
+      *--------------------------------------------------------------*  00130004
+       DATA                                DIVISION.                    00140004
+      *--------------------------------------------------------------*  00150004
+       FILE                                SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+       FD  EXTTDO24
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTDO24
+           .
+       01  FD-EXTTDO24                     PIC X(44).
+
+       FD  EXTTAO24
+           LABEL RECORD STANDARD
+           BLOCK CONTAINS 0 RECORDS
+           RECORDING MODE IS F
+           RECORD CONTAINS 44 CHARACTERS
+           DATA RECORD IS FD-EXTTAO24
+           .
+       01  FD-EXTTAO24                     PIC X(44).
+
+      *--------------------------------------------------------------*  00210008
+       WORKING-STORAGE                     SECTION.                     00160004
+      *--------------------------------------------------------------*  00210008
+      * DECLARACAO DAS VARIAVEIS ESPELHO DOS ARQUIVOS
+      *--------------------------------------------------------------*  00210008
+           COPY B103DO24.
+           COPY B103AO24.
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE FILE STATUS
+      *--------------------------------------------------------------*  00210008
+       01  FS-EXTTDO24                     PIC X(02).
+           88 SUCESSO-DO24                         VALUE '00'.
+           88 FIM-ARQ-DO24                         VALUE '10'.
+
+       01  FS-EXTTAO24                     PIC X(02).
+           88 SUCESSO-AO24                         VALUE '00'.
+           88 FIM-ARQ-AO24                         VALUE '10'.
+
+      *--------------------------------------------------------------*  00210008
+      * VARIAVEIS DE TRABALHO
+      *--------------------------------------------------------------*  00210008
+       77  WS-CPF-AUX                      PIC X(11).
+
+       77  WS-SALDO-AUX                    PIC S9(11)V99
+                                                   COMP.
+       77  WS-NOME-AUX                     PIC X(16).
+      *--------------------------------------------------------------*  00211007
+       PROCEDURE                           DIVISION.                    00220004
+      *--------------------------------------------------------------*  00230004
+       0000-MAIN.
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+                   UNTIL FIM-ARQ-DO24
+           PERFORM 3000-TERMINO
+           GOBACK
+           .
+      *
+       1000-INICIALIZAR.
+      
+           OPEN INPUT EXTTDO24
+      *
+           IF NOT SUCESSO-DO24
+              DISPLAY 'ERRO ABERTURA EXTTDO24'  
+           END-IF
+
+           OPEN OUTPUT EXTTAO24
+
+           IF NOT SUCESSO-AO24
+              DISPLAY 'ERRO ABERTURA EXTTAO24'
+           END-IF
+      *
+           PERFORM 1500-LER-EXTTDO24
+      *
+           MOVE B103DO24-CPF               TO WS-CPF-AUX
+           MOVE B103DO24-NOME              TO WS-NOME-AUX
+           .
+      *
+       1500-LER-EXTTDO24.
+           READ EXTTDO24 INTO REG-EXTTDO24
+      *
+           IF SUCESSO-DO24
+           ELSE
+              IF NOT FIM-ARQ-DO24
+                 DISPLAY 'ERRO LEITURA EXTTDO24'
+              END-IF
+           END-IF
+           .
+      *
+       2000-PROCESSAR.
+           IF B103DO24-CPF = WS-CPF-AUX
+              ADD B103DO24-SALDO           TO WS-SALDO-AUX
+              PERFORM 1500-LER-EXTTDO24
+           ELSE
+              PERFORM 2100-GRAVAR-EXTTAO24
+              MOVE 0                       TO WS-SALDO-AUX
+              MOVE B103DO24-CPF            TO WS-CPF-AUX
+              MOVE B103DO24-NOME           TO WS-NOME-AUX
+           END-IF
+           .
+      *
+       2100-GRAVAR-EXTTAO24.
+           MOVE WS-CPF-AUX                 TO B103AO24-CPF
+           MOVE WS-NOME-AUX                TO B103AO24-NOME
+           MOVE WS-SALDO-AUX               TO B103AO24-SALDO
+
+           WRITE FD-EXTTAO24 FROM REG-EXTTAO24
+
+           IF NOT SUCESSO-AO24
+              DISPLAY 'ERRO DE GRAVACAO EXTTAO24'
+           END-IF
+           .
+      *
+       3000-TERMINO.
+           PERFORM 2100-GRAVAR-EXTTAO24
+
+           CLOSE EXTTDO24
+      *
+           IF NOT SUCESSO-DO24
+              DISPLAY 'ERRO FECHAMENTO EXTTDO24'
+           END-IF
+      *
+           CLOSE EXTTAO24
+      *
+           IF NOT SUCESSO-AO24
+              DISPLAY 'ERRO FECHAMENTO EXTTAO24'
+           END-IF
+
+           DISPLAY "=================================================="
+           DISPLAY "==          TERMINO NORMAL DO P103NX02          =="
+           DISPLAY "=================================================="
+           .
+           
