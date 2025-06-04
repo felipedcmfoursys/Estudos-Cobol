@@ -25,6 +25,7 @@
 
        01  WS-DFHCOMMAREA.
            05 WS-FASE                      PIC X(01).
+           05 WS-CODPROD                   PIC X(01).
 
            COPY FS03CAD.
            COPY DFHAID.

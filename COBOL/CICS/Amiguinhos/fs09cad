@@ -1,4 +1,4 @@
-FS09CAD  DFHMSD TYPE=MAP(MAP,DSECT),                                   X
+fs03CAD  DFHMSD TYPE=MAP(MAP,DSECT),                                   X
                MODE=INOUT,                                             X
                LANG=COBOL,                                             X
                STORAGE=AUTO,                                           X
@@ -262,7 +262,7 @@ T2CONF   DFHMDF POS=(18,31),                                           X
                INITIAL='-----------------------------------------------X
                --------------------------------'
 * CAMPO VARIAVEL
-T2USR    DFHMDF POS=(22,01),                                           X
+T2USer   DFHMDF POS=(22,01),                                           X
                LENGTH=08,                                              X
                ATTRB=(ASKIP,BRT,FSET),                                 X
                PICOUT='X(08)'
