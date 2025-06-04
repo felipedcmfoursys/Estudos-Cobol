@@ -25,7 +25,7 @@
 
        01  WS-DFHCOMMAREA.
            05 WS-FASE                      PIC X(01).
-           05 WS-CODPROD                   PIC X(01).
+           05 WS-CODPROD-COMMAREA          PIC X(04).
 
            COPY FS03CAD.
            COPY DFHAID.
@@ -41,7 +41,7 @@
            05 WS-QTDMIN                    PIC 9(05).
            05 WS-PRECOCOMPRA               PIC 9(06)V99.
            05 WS-PRECOVENDA                PIC 9(06)V99.
-           05 WS-PERCOMIS                  PIC 9(02)V99.     
+           05 WS-PERCOMIS                  PIC 9(02)V99.
       *----------------------------------------------------------------*
        LINKAGE                             SECTION.
       *----------------------------------------------------------------*
@@ -75,6 +75,7 @@
               WHEN '1' PERFORM 100-FASE1
               WHEN '2' PERFORM 200-FASE2
               WHEN '3' PERFORM 300-FASE3
+              when 'p' perform 999-paginacao-consultar
               WHEN OTHER
                  MOVE +80                  TO WS-LENGTH
                  MOVE 'ERRO NO NUMERO DA FASE'
@@ -117,7 +118,7 @@
            END-IF
 
            EXEC CICS READ
-             FILE('VCADPRD') 
+             FILE('VCADPRD')
              RIDFLD(T2CODI)
              INTO(WS-REG-VCADPRD)
            END-EXEC
@@ -126,15 +127,15 @@
            .
 
         220-PF3.
-           MOVE '1'                        to ws-fase  
+           MOVE '1'                        to ws-fase
 
            EXEC CICS XCTL
              PROGRAM ('FS03PGMM')
-             COMMAREA(WSDFHCOMMAREA)
+             COMMAREA(WS-DFHCOMMAREA)
              LENGTH(LENGTH OF WS-DFHCOMMAREA)
            END-EXEC
            .
-           
+
         230-PF5.
            PERFORM 999-CHAMA-FASE1
            .
@@ -210,7 +211,7 @@
            MOVE DFHBMPRF                   TO T2VENDA
            MOVE DFHBMPRF                   TO T2COMISA
            MOVE DFHBMPRF                   TO T2CONFA
-           . 
+           .
         999-PROTECAO-FASE3.
       * DESPROTEGER
            MOVE DFHUNIMD                   TO T2CONFA
@@ -245,7 +246,7 @@
             MOVE WS-FASE                   TO T2FASEO
 
             EXEC CICS ASSIGN
-               USERID(T2USRO)
+               USERID(T2USERO)
             END-EXEC
 
             EXEC CICS LINK
@@ -284,6 +285,14 @@
                 LENGTH(LENGTH OF WS-DFHCOMMAREA)
             END-EXEC
             .
+        999-CHAMA-FASE3.
+            MOVE '3'                        TO WS-FASE
+            EXEC CICS RETURN
+               TRANSID('F03A')
+               COMMAREA(WS-DFHCOMMAREA)
+               LENGTH(LENGTH OF WS-DFHCOMMAREA)
+            END-EXEC
+            .
         999-TRATA-FASE2.
            MOVE -1                         TO T2CODL
            PERFORM 999-PROTECAO-FASE2
@@ -291,7 +300,7 @@
            PERFORM 999-CHAMA-FASE2
            .
         999-TRATA-FASE3.
-           MOVE -1                         TO T2CONFO
+           MOVE -1                         TO T2CONFL
       *          1234567890123456789012345
            MOVE 'CONSULTAR OUTRO (S/N)?'   TO T2ACAOO
 
@@ -329,4 +338,11 @@
            MOVE 'ERRO GENERICO FS03PGMA'   TO WS-MSG-ERRO
            PERFORM 999-ENCERRA-TRANSACAO
            .
+
+        999-PAGINACAO-CONSULTAR.
+           move +4                         to t2codl
+           MOVE WS-CODPROD-COMMAREA        TO T2CODO
+           perform 210-enter
+           .
+
 

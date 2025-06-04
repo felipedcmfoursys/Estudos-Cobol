@@ -2,7 +2,7 @@
        IDENTIFICATION                      DIVISION.
       *----------------------------------------------------------------*
        PROGRAM-ID.                         FS03PGMB.
-       AUTHOR.                             NELSON.
+       AUTHOR.                             FELIPE.
 
       *----------------------------------------------------------------*
        ENVIRONMENT                         DIVISION.
@@ -25,6 +25,7 @@
 
        01  WS-DFHCOMMAREA.
            05 WS-FASE                      PIC X(01).
+           05 WS-CODPROD-COMMAREA          PIC X(04).
 
            COPY FS03CAD.
            COPY DFHAID.
@@ -78,6 +79,7 @@
               WHEN '2' PERFORM 200-FASE2
               WHEN '3' PERFORM 300-FASE3
               WHEN '4' PERFORM 400-FASE4
+              WHEN 'P' PERFORM 999-PAGINACAO-CONSULTAR
               WHEN OTHER
                  MOVE +80                  TO WS-LENGTH
                  MOVE 'ERRO NO NUMERO DA FASE'
@@ -393,7 +395,7 @@
             MOVE 'INCLUSAO VSAM-KSDS'      TO T2TELAO
 
             EXEC CICS ASSIGN
-               USERID(T2USRO)
+               USERID(T2USERO)
             END-EXEC
 
             EXEC CICS LINK
@@ -519,5 +521,11 @@
            MOVE +80                        TO WS-LENGTH
            MOVE 'ERRO GENERICO FS03PGMA'   TO WS-MSG-ERRO
            PERFORM 999-ENCERRA-TRANSACAO
+           .
+
+       999-PAGINACAO-CONSULTAR.
+           MOVE +4                         TO T2CODL
+           MOVE WS-CODPROD-COMMAREA        TO T2CODO
+           PERFORM 210-ENTER
            .
 
