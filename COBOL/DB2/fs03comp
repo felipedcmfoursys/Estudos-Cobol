@@ -1,0 +1,250 @@
+      *--------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *-------------------------------------------------------------*
+       PROGRAM-ID.                         fs03comp.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT TTCOMPRA ASSIGN TO UT-S-TTCOMPRA
+           FILE STATUS IS FS-TTCOMPRA
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  TTCOMPRA
+           RECORDING MODE IS F
+           RECORD CONTAINS 80 CHARACTERS
+           DATA RECORD IS REG-TTCOMPRA
+           .
+       01  REG-TTCOMPRA                    PIC X(80).
+
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+
+      *    BOOK DAS VARIAVEIS HOSPEDEIRAS
+           EXEC SQL
+               INCLUDE BK03COMP
+           END-EXEC
+           .
+
+      *    BOOK DAS VARIAVEIS PARA USO DO SQL
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-TTCOMPRA                     PIC X(02).
+           88 SUCESSO                              VALUE '00'.
+           88 FIM-ARQ                              VALUE '10'.
+
+      *--------------------------------------------------------------*
+      *    INDICADORES                                               *
+      *--------------------------------------------------------------*
+       01  WS-ESPELHOS.
+           05 WS-IDFORNEC                   PIC 9(09).
+           05 WS-TIPOCOMPRA                 PIC 9(09).           
+           05 WS-VALORCOMPRA                PIC S9(08)V99 COMP-3.
+
+       77  WS-IDFORNEC-AUX                  PIC 9(09).
+       77  WS-VALORTOTAL                    PIC 9(09).
+       77  WS-TIPOCOMPRA-AUX                PIC 9(09).
+
+       01  WS-INDICADORES.
+           05 IIDCOMPRA                     PIC S9(04) COMP.
+           05 IDATACOMPRA                   PIC S9(04) COMP.
+           05 ITIPOCOMPRA                   PIC S9(04) COMP.
+           05 IIDFORNEC                     PIC S9(04) COMP.
+           05 IVALORCOMPRA                  PIC S9(06) COMP.
+
+       77  WS-SQLCODE                      PIC +9(09).
+
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+           DISPLAY '0000-MAIN'
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+               UNTIL SQLCODE = +100
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+      * DECLARACAO DO CURSOR PARA REPOSICAO
+
+           EXEC SQL
+               DECLARE COMPRACSR CURSOR FOR
+                   SELECT IDCOMPRA,
+                          DATACOMPRA,
+                          TIPOCOMPRA, 
+                          IDFORNEC,  
+                          VALORCOMPRA
+                   FROM TBCOMPRA 
+                   WHERE (TIPOCOMPRA = 1 AND VALORCOMPRA >= 1000)
+                         OR
+                         (TIPOCOMPRA = 2 AND VALORCOMPRA >= 500)
+           END-EXEC
+
+      * ABERTURA DO CURSOR
+           EXEC SQL
+               OPEN COMPRACSR
+           END-EXEC
+
+           IF SQLCODE NOT EQUAL 0
+               DISPLAY "ERRO AO ABRIR CURSOR"
+               MOVE SQLCODE                  TO WS-SQLCODE
+               GO TO 9000-ERRO-DB2
+           END-IF
+
+           OPEN OUTPUT TTCOMPRA
+
+           IF NOT SUCESSO
+               DISPLAY "ERRO ABERTURA CLIRELAT"
+               DISPLAY FS-TTCOMPRA
+               GO TO 9000-ERRO
+           END-IF
+                      
+           INITIALIZE WS-INDICADORES
+           PERFORM 1500-LER-COMPRACSR 
+           
+           MOVE IDFORNEC TO WS-IDFORNEC-AUX
+           MOVE TIPOCOMPRA TO WS-TIPOCOMPRA-AUX
+           MOVE 0 TO WS-VALORTOTAL
+           .
+
+       1500-LER-COMPRACSR.
+           EXEC SQL
+               FETCH COMPRACSR
+               INTO :IDFORNEC    :IIDFORNEC,
+                    :TIPOCOMPRA  :ITIPOCOMPRA,
+                    :VALORCOMPRA :IVALORCOMPRA 
+           END-EXEC
+
+           IF SQLCODE = 0
+               PERFORM 1600-TRATA-INDICATOR
+           ELSE
+               IF SQLCODE NOT = +100
+                   DISPLAY "ERRO DE LEITURA CURSOR"
+                   MOVE SQLCODE    TO WS-SQLCODE
+                   GO TO 9000-ERRO-DB2
+               END-IF
+           END-IF
+           .
+
+       1600-TRATA-INDICATOR.
+           DISPLAY '1600-INDICATOR'
+
+           IF IIDCOMPRA  < 0
+               MOVE ZEROS                   TO IDCOMPRA   
+           END-IF
+
+           IF IDATACOMPRA  < 0
+               MOVE ZEROS                   TO DATACOMPRA 
+           END-IF
+
+           IF ITIPOCOMPRA < 0
+               MOVE ZEROS                   TO TIPOCOMPRA
+           END-IF
+
+           IF IDFORNEC < 0
+               MOVE ZEROS                   TO IDFORNEC
+           END-IF
+
+           IF IVALORCOMPRA < 0
+               MOVE ZEROS                   TO VALORCOMPRA
+           END-IF
+           .
+       2000-PROCESSAR.
+           IF IDFORNEC = WS-IDFORNEC-AUX
+               IF TIPOCOMPRA = WS-TIPOCOMPRA-AUX
+                   PERFORM 2100-SOMA
+               ELSE
+                   IF TIPOCOMPRA NOT EQUAL WS-TIPOCOMPRA-AUX
+                   PERFORM 2100-GRAVAR
+                   END-IF
+               END-IF    
+           ELSE    
+               IF IDFORNEC > WS-IDFORNEC-AUX
+                   PERFORM 2100-GRAVAR
+               END-IF
+           END-IF
+           .
+       2100-SOMA.
+           ADD VALORCOMPRA TO WS-VALORTOTAL
+                   
+           PERFORM 1500-LER-COMPRACSR
+           .
+       2100-GRAVAR.
+           MOVE IDFORNEC      TO WS-IDFORNEC
+           MOVE TIPOCOMPRA    TO WS-TIPOCOMPRA
+           MOVE WS-VALORTOTAL TO WS-VALORCOMPRA
+           
+           WRITE REG-TTCOMPRA FROM WS-ESPELHOS
+           IF SUCESSO
+               MOVE TIPOCOMPRA TO WS-TIPOCOMPRA-AUX
+               MOVE IDFORNEC   TO WS-IDFORNEC-AUX
+               MOVE 0          TO WS-VALORTOTAL
+           ELSE    
+               DISPLAY 'ERRO NA GRAVACAO REG-TTCOMPRA'
+               GO TO 9000-ERRO
+           END-IF       
+           
+           PERFORM 1500-LER-COMPRACSR
+           .
+
+       3000-TERMINO.
+           PERFORM 2100-GRAVAR
+           
+           EXEC SQL
+               CLOSE COMPRACSR
+           END-EXEC
+
+           IF SQLCODE NOT EQUAL 0
+               DISPLAY "ERRO AO FECHAR CURSOR"
+               MOVE SQLCODE TO WS-SQLCODE
+               GO TO 9000-ERRO-DB2
+           END-IF
+
+           CLOSE TTCOMPRA
+           IF NOT SUCESSO
+               DISPLAY "ERRO FECHAMENTO TTCOMPRA"
+               DISPLAY FS-TTCOMPRA
+               GO TO 9000-ERRO
+           END-IF
+
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '                 WEYLAND-YUTANI                   '
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL EXERELAT              '
+           DISPLAY '=================================================='
+           .
+
+       9000-ERRO.
+           DISPLAY '9000-ERRO'
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '   XXX      TERMINO ANORMAL DO EXERELAT     XXX   '
+           DISPLAY '--------------------------------------------------'
+           STOP RUN
+           .
+
+       9000-ERRO-DB2.
+           DISPLAY '9000-ERRO-DB2'
+           DISPLAY '=================================================='
+           DISPLAY 'CODIGO...: ' WS-SQLCODE
+           DISPLAY '=================================================='
+           .

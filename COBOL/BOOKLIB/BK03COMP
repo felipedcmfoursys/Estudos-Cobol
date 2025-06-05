@@ -1,0 +1,26 @@
+       ******************************************************************
+       * DCLGEN TABLE(TBCOMPRA)                                         *
+       *        LIBRARY(FS.FSYS003.BOOKLIB(BK03COMP))                   *
+       *        LANGUAGE(COBOL)                                         *
+       *        QUOTE                                                   *
+       * ... IS THE DCLGEN COMMAND THAT MADE THE FOLLOWING STATEMENTS   *
+       ******************************************************************
+            EXEC SQL DECLARE TBCOMPRA TABLE                              
+            ( IDCOMPRA                       INTEGER NOT NULL,           
+              DATACOMPRA                     DATE NOT NULL,              
+              TIPOCOMPRA                     INTEGER NOT NULL,           
+              IDFORNEC                       INTEGER NOT NULL,           
+              VALORCOMPRA                    DECIMAL(10, 2) NOT NULL     
+            ) END-EXEC.                                                  
+       ******************************************************************
+       * COBOL DECLARATION FOR TABLE TBCOMPRA                           *
+       ******************************************************************
+        01  DCLTBCOMPRA.                                                 
+            10 IDCOMPRA             PIC S9(9) USAGE COMP.                
+            10 DATACOMPRA           PIC X(10).                           
+            10 TIPOCOMPRA           PIC S9(9) USAGE COMP.                
+            10 IDFORNEC             PIC S9(9) USAGE COMP.                
+            10 VALORCOMPRA          PIC S9(8)V9(2) USAGE COMP-3.         
+       ******************************************************************
+       * THE NUMBER OF COLUMNS DESCRIBED BY THIS DECLARATION IS 5       *
+       ******************************************************************
