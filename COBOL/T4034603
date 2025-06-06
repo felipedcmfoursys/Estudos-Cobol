@@ -1,0 +1,160 @@
+      *--------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *-------------------------------------------------------------*
+       PROGRAM-ID.                         T4034603.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT A1034603 ASSIGN TO UT-S-A1034603
+           FILE STATUS IS FS-A1034603
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  A1034603
+           LABEL RECORD OMITTED
+           RECORDING MODE IS F
+           RECORD CONTAINS 75 CHARACTERS
+           DATA RECORD IS REG-A1034603
+           .
+       01  REG-A1034603                     PIC X(75).
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+
+
+      *    BOOK DAS VARIAVEIS HOSPEDEIRAS
+           EXEC SQL
+               INCLUDE DCLFUNC
+           END-EXEC
+           .
+
+      *    BOOK DAS VARIAVEIS PARA USO DO SQL
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC
+
+           COPY BK034603.
+
+       01  WS-CONTADORES-COMP.
+           05  WS-CTLIDO                   PIC 9(05) COMP.
+           05  WS-CTEXC                    PIC 9(05) COMP.
+
+       01  WS-CONTADORES-COM-F.
+           05  WS-CTLIDO-F                 PIC ZZZ9.
+           05  WS-CTEXC-F                  PIC ZZZ9.
+
+       77  WS-SQLCODE                      PIC +9(9).
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-A1034603                      PIC X(02).
+           88 SUCESSO                              VALUE '00'.
+           88 FIM-ARQ                              VALUE '10'.
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+               UNTIL FIM-ARQ
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           INITIALIZE WS-CONTADORES-COMP
+           MOVE 0                          TO WS-CTLIDO
+                                              WS-CTEXC
+
+           OPEN INPUT A1034603
+
+           IF NOT SUCESSO
+               DISPLAY "ERRO ABERTURA ARQUIVO ENTRADA"
+               DISPLAY FS-A1034603
+               GO TO 9000-ERRO
+           END-IF
+
+           PERFORM 1500-LER-ARQUIVO
+           .
+
+       1500-LER-ARQUIVO.
+           READ A1034603 INTO BK034603-CPF
+
+           IF SUCESSO
+              ADD 1                        TO WS-CTLIDO
+           ELSE
+               IF NOT FIM-ARQ
+               DISPLAY 'ERRO DE LEITURA ARQUIVO'     
+               DISPLAY FS-A1034603
+               GO TO 9000-ERRO
+               END-IF
+           END-IF
+           .
+           
+       2000-PROCESSAR.
+           MOVE BK034603-CPF                TO DCLFUNC-CPF
+
+           EXEC SQL
+               DELETE FROM FUNCIONARIOS
+               WHERE CPF = :DCLFUNC-CPF
+           END-EXEC
+
+           EVALUATE SQLCODE
+               WHEN 0    ADD 1 TO WS-CTEXC
+               WHEN OTHER
+                   DISPLAY "ERRO DELETE NA TBCLINTE"
+                   DISPLAY SQLCODE
+                   PERFORM 9000-ERRO-DB2
+           END-EVALUATE
+
+           PERFORM 1500-LER-ARQUIVO
+           .
+
+       3000-TERMINO.
+           MOVE WS-CTLIDO                    TO WS-CTLIDO-F
+           MOVE WS-CTEXC                     TO WS-CTEXC-F
+
+           CLOSE A1034603
+           IF NOT SUCESSO
+               DISPLAY "ERRO FECHAMENTO ARQUIVO"
+               DISPLAY FS-A1034603
+               GO TO 9000-ERRO
+           END-IF
+
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '                 WEYLAND-YUTANI                   '
+           DISPLAY '--------------------------------------------------'
+           DISPLAY 'TOTAL DE LIDOS....................' WS-CTLIDO-F
+           DISPLAY 'TOTAL DE EXCLUIDOS................' WS-CTEXC-F
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL T4034603              '
+           DISPLAY '=================================================='
+           .
+
+       9000-ERRO.
+           DISPLAY '9000-ERRO'
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '   XXX      TERMINO ANORMAL DO T4034603      XX   '
+           DISPLAY '--------------------------------------------------'
+           STOP RUN
+           .
+
+       9000-ERRO-DB2.
+           DISPLAY '9000-ERRO-DB2'
+           DISPLAY '=================================================='
+           DISPLAY 'CODIGO...: ' WS-SQLCODE
+           DISPLAY '=================================================='
+           .

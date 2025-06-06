@@ -227,7 +227,7 @@
            PERFORM 3000-TERMINO
            GOBACK
            .
-
+           
        1000-INICIALIZAR.
            DISPLAY '1000-INICIALIZAR'
            ACCEPT WS-HORARIO-INICIAL FROM TIME

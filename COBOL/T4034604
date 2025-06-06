@@ -1,0 +1,190 @@
+      *--------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *-------------------------------------------------------------*
+       PROGRAM-ID.                         T4034604.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT A4034604 ASSIGN TO UT-S-A4034604
+           FILE STATUS IS FS-A4034604
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  A4034604
+           LABEL RECORD OMITTED
+           RECORDING MODE IS F
+           RECORD CONTAINS 75 CHARACTERS
+           DATA RECORD IS REG-A4034604
+           .
+       01  REG-A4034604                     PIC X(75).
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+
+
+      *    BOOK DAS VARIAVEIS HOSPEDEIRAS
+           EXEC SQL
+               INCLUDE DCLFUNC
+           END-EXEC
+           .
+
+      *    BOOK DAS VARIAVEIS PARA USO DO SQL
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC
+
+           COPY BK034604.
+
+       77  WS-TELEFONEFULL                 PIC 9(14).
+
+       01  WS-CONTADORES-COMP.
+           05  WS-CTLIDO                   PIC 9(05) COMP.
+           05  WS-CTALT                    PIC 9(05) COMP.
+           05  WS-CTDESC                   PIC 9(05) COMP.
+
+       01  WS-CONTADORES-COM-F.
+           05  WS-CTLIDO-F                 PIC ZZZ9.
+           05  WS-CTALT-F                  PIC ZZZ9.
+           05  WS-CTDESC-F                 PIC ZZZ9.
+
+       77  WS-SQLCODE                      PIC +9(9).
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-A4034604                      PIC X(02).
+           88 SUCESSO                              VALUE '00'.
+           88 FIM-ARQ                              VALUE '10'.
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+               UNTIL FIM-ARQ
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           INITIALIZE WS-CONTADORES-COMP
+
+           MOVE 0                          TO WS-CTLIDO
+                                              WS-CTALT
+                                              WS-CTDESC
+
+           IF SQLCODE NOT EQUAL 0
+               DISPLAY "ERRO AO ABRIR CURSOR"
+               MOVE SQLCODE                  TO WS-SQLCODE
+               GO TO 9000-ERRO-DB2
+           END-IF
+
+           OPEN INPUT A4034604
+
+           IF NOT SUCESSO
+               DISPLAY "ERRO ABERTURA ARQUIVO SAIDA"
+               DISPLAY FS-A4034604
+               GO TO 9000-ERRO
+           END-IF
+
+           PERFORM 1500-LER-ARQUIVO
+           .
+
+       1500-LER-ARQUIVO.
+           READ A4034604 INTO BK034604
+
+           IF SUCESSO
+              ADD 1                        TO WS-CTLIDO
+           ELSE
+               IF NOT FIM-ARQ
+               DISPLAY 'ERRO DE LEITURA ARQUIVO'     
+               DISPLAY FS-A4034604
+               GO TO 9000-ERRO
+               END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           MOVE BK034604-CPF                 TO DCLFUNC-CPF
+           MOVE +30                          TO DCLFUNC-NOME-LEN
+           MOVE BK034604-NOME                TO DCLFUNC-NOME-TEXT
+           MOVE BK034604-DDI                 TO DCLFUNC-DDI
+           MOVE BK034604-DDD                 TO DCLFUNC-DDD
+           MOVE BK034604-TELEFONE            TO DCLFUNC-TELEFONE
+           MOVE BK034604-SALARIOBASE         TO DCLFUNC-SALARIOBASE
+
+           EXEC SQL
+               UPDATE FUNCIONARIOS
+               SET CPF         = :DCLFUNC-CPF,
+                   NOME        = :DCLFUNC-NOME,
+                   DDI         = :DCLFUNC-DDI,
+                   DDD         = :DCLFUNC-DDD,
+                   TELEFONE    = :DCLFUNC-TELEFONE,
+                   SALARIOBASE = :DCLFUNC-SALARIOBASE
+               WHERE CPF       = :DCLFUNC-CPF
+           END-EXEC
+
+           EVALUATE SQLCODE
+               WHEN 0      ADD 1 TO WS-CTALT
+               WHEN OTHER
+                   DISPLAY "ERRO UPDATE TABELA 2310"
+                   DISPLAY SQLCODE
+                   PERFORM 9000-ERRO-DB2
+           END-EVALUATE
+           .
+
+       3000-TERMINO.
+           MOVE WS-CTLIDO                    TO WS-CTLIDO-F
+           MOVE WS-CTALT                     TO WS-CTALT-F
+           MOVE WS-CTDESC                    TO WS-CTDESC-F
+
+           IF SQLCODE NOT EQUAL 0
+               DISPLAY "ERRO AO FECHAR CURSOR"
+               MOVE SQLCODE TO WS-SQLCODE
+               GO TO 9000-ERRO-DB2
+           END-IF
+
+           CLOSE A4034604
+           IF NOT SUCESSO
+               DISPLAY "ERRO FECHAMENTO ARQUIVO"
+               DISPLAY FS-A4034604
+               GO TO 9000-ERRO
+           END-IF
+
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '                 WEYLAND-YUTANI                   '
+           DISPLAY '--------------------------------------------------'
+           DISPLAY 'TOTAL DE LIDOS....................' WS-CTLIDO-F
+           DISPLAY 'TOTAL DE ALTERADOS................' WS-CTALT-F
+           DISPLAY 'TOTAL DE DESCARTADOS..............' WS-CTDESC-F
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL T4034604              '
+           DISPLAY '=================================================='
+           .
+
+       9000-ERRO.
+           DISPLAY '9000-ERRO'
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '   XXX      TERMINO ANORMAL DO T4034604     XXX   '
+           DISPLAY '--------------------------------------------------'
+           STOP RUN
+           .
+
+       9000-ERRO-DB2.
+           DISPLAY '9000-ERRO-DB2'
+           DISPLAY '=================================================='
+           DISPLAY 'CODIGO...: ' WS-SQLCODE
+           DISPLAY '=================================================='
+           .
