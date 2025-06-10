@@ -1,0 +1,459 @@
+FS03SML  DFHMSD TYPE=(MAP,DSECT),                                      X
+               MODE=INOUT,                                             X
+               LANG=COBOL,                                             X
+               STORAGE=AUTO,                                           X
+               MAPATTS=(COLOR,HILIGHT),                                X
+               DSATTS=(COLOR,HILIGHT),                                 X
+               CTRL=(FREEKB,ALARM,FRSET),                              X
+               TIOAPFX=YES
+*
+MAPASML  DFHMDI SIZE=(24,80),                                          X
+               LINE=1,                                                 X
+               COLUMN=1
+
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(01,01),                                           X
+               LENGTH=10,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='TERMINAL.:'
+
+*
+* CAMPO VARIAVEL
+*
+T4TERM   DFHMDF POS=(01,12),                                           X
+               LENGTH=4,                                               X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='X(04)'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(01,33),                                           X
+               LENGTH=14,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='WEYLAND-YUTANI'
+*
+* CAMPO VARIAVEL
+*
+T4DATA   DFHMDF POS=(01,69),                                           X
+               LENGTH=10,                                              X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='X(10)'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(02,01),                                           X
+               LENGTH=10,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='TRANSACAO:'
+*
+* CAMPO VARIAVEL
+*
+T4TRAN   DFHMDF POS=(02,12),                                           X
+               LENGTH=4,                                               X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='X(04)'
+
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(02,30),                                           X
+               LENGTH=20,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=YELLOW,                                           X
+               INITIAL='BANCO WEYLAND-YUTANI'
+*
+* CAMPO VARIAVEL
+*
+T4HORA   DFHMDF POS=(02,71),                                           X
+               LENGTH=8,                                               X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='X(08)'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(03,01),                                           X
+               LENGTH=79,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='-----------------------------------------------X
+               --------------------------------',                      X
+               COLOR=GREEN
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(04,01),                                           X
+               LENGTH=05,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=YELLOW,                                           X
+               INITIAL='TASK:'
+*
+* CAMPO VARIAVEL
+*
+T4TASK   DFHMDF POS=(04,07),                                           X
+               LENGTH=7,                                               X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='9(07)'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(04,33),                                           X
+               LENGTH=23,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='SIMULACAO DE EMPRESTIMO'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(04,72),                                           X
+               LENGTH=5,                                               X
+               ATTRB=ASKIP,                                            X
+               COLOR=RED,                                              X
+               INITIAL='FASE:'
+*
+* CAMPO VARIAVEL
+*
+T4FASE   DFHMDF POS=(04,78),                                           X
+               LENGTH=1,                                               X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='9(01)'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(05,01),                                           X
+               LENGTH=79,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='-----------------------------------------------X
+               --------------------------------',                      X
+               COLOR=YELLOW
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(07,06),                                           X
+               LENGTH=34,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=YELLOW,                                           X
+               INITIAL='INFORME OS DADOS E PRESSIONE ENTER'
+
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(08,06),                                           X
+               LENGTH=34,                                              X
+               ATTRB=(ASKIP,BRT),                                      X
+               INITIAL='----------------------------------'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(08,50),                                           X
+               LENGTH=14,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='WEYLAND-YUTANI'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(09,06),                                           X
+               LENGTH=23,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='NUMERO DA SIMULACAO....'
+*
+* CAMPO VARIAVEL
+*
+T4NSIMU  DFHMDF POS=(09,30),                                           X
+               LENGTH=5,                                               X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='9(05)'
+*
+* DELIMITADOR
+*
+         DFHMDF POS=(09,36),                                           X
+               LENGTH=0,                                               X
+               ATTRB=ASKIP
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(09,45),                                           X
+               LENGTH=27,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='CONSTRUINDO MUNDOS MELHORES'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(10,06),                                           X
+               LENGTH=23,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='NOME DO CLIENTE........'
+*
+* CAMPO VARIAVEL
+*
+T4NOME   DFHMDF POS=(10,30),                                           X
+               LENGTH=25,                                              X
+               ATTRB=(ASKIP,BRT),                                      X
+               PICOUT='X(25)',                                         X
+               PICIN='X(25)',   '                                       X
+               HILIGHT=UNDERLINE
+*
+* DELIMITADOR
+*
+         DFHMDF POS=(10,56),                                           X
+               LENGTH=0,                                               X
+               ATTRB=ASKIP
+*
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(11,06),                                           X
+               LENGTH=23,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='TELEFONE DE CONTATO....'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(11,30),                                           X
+               LENGTH=1,                                               X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='('
+*
+* CAMPO VARIAVEL
+*
+T4DDD    DFHMDF POS=(11,32),                                           X
+               LENGTH=02,                                              X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='9(02)',                                         X
+               HILIGHT=UNDERLINE
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(11,35),                                           X
+               LENGTH=1,                                               X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL=')'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(11,37),                                           X
+               LENGTH=1,                                               X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='-'
+*
+*
+* CAMPO VARIAVEL
+*
+T4TEL    DFHMDF POS=(11,39),                                           X
+               LENGTH=9,                                               X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='9(09)',                                         X
+               HILIGHT=UNDERLINE
+*
+* DELIMITADOR
+*
+         DFHMDF POS=(11,49),                                           X
+               LENGTH=0,                                               X
+               ATTRB=ASKIP
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(12,06),                                           X
+               LENGTH=23,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='VALOR DO EMPRESTIMO....'
+*
+* CAMPO VARIAVEL
+*
+T4EMPR   DFHMDF POS=(12,30),                                           X
+               LENGTH=12,                                              X
+               ATTRB=(ASKIP,BRT,FSET),                                 X
+               PICOUT='9.999.999,99',                                  X
+               HILIGHT=UNDERLINE
+*
+* DELIMITADOR
+*
+         DFHMDF POS=(12,43),                                           X
+               LENGTH=0,                                               X
+               ATTRB=ASKIP
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(14,06),                                           X
+               LENGTH=22,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='RESULTADO DA SIMULACAO'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(15,06),                                           X
+               LENGTH=22,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='----------------------'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(16,06),                                           X
+               LENGTH=22,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='TAXA DE JUROS AO MES.:'
+*
+* CAMPO VARIAVEL
+*
+T4PORC   DFHMDF POS=(16,30),                                           X
+               LENGTH=04,                                              X
+               ATTRB=(ASKIP,BRT),                                      X
+               PICOUT='9(02)V99'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(17,06),                                           X
+               LENGTH=22,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='12 PARCELAS DE.......:'
+*
+* CAMPO VARIAVEL
+*
+T412PR   DFHMDF POS=(17,30),                                           X
+               LENGTH=12,                                              X
+               ATTRB=(ASKIP,BRT),                                      X
+               PICOUT='9.999.999,99'
+
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(18,06),                                           X
+               LENGTH=22,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='24 PARCELAS DE.......:'
+*
+* CAMPO VARIAVEL
+*
+T424PR   DFHMDF POS=(18,30),                                           X
+               LENGTH=12,                                              X
+               ATTRB=(ASKIP,BRT),                                      X
+               PICOUT='9.999.999,99'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(19,06),                                           X
+               LENGTH=22,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='36 PARCELAS DE.......:'
+*
+* CAMPO VARIAVEL
+*
+T436PR   DFHMDF POS=(19,30),                                           X
+               LENGTH=12,                                              X
+               ATTRB=(ASKIP,BRT),                                      X
+               PICOUT='9.999.999,99'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(20,06),                                           X
+               LENGTH=22,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='48 PARCELAS DE.......:'
+*
+* CAMPO VARIAVEL
+*
+T448PR   DFHMDF POS=(20,30),                                           X
+               LENGTH=12,                                              X
+               ATTRB=(ASKIP,BRT),                                      X
+               PICOUT='9.999.999,99'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(21,06),                                           X
+               LENGTH=23,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=GREEN,                                            X
+               INITIAL='DESEJA OUTRA SIMULACAO?'
+*
+* DELIMITADOR
+*
+         DFHMDF POS=(21,30),                                           X
+               LENGTH=0,                                               X
+               ATTRB=ASKIP
+*
+* CAMPO VARIAVEL
+*
+T4OPC    DFHMDF POS=(21,31),                                           X
+               LENGTH=1,                                               X
+               ATTRB=(UNPROT,BRT,FSET,IC),                             X
+               PICOUT='X(01)',                                         X
+               COLOR=RED,                                              X
+               HILIGHT=UNDERLINE
+*
+* CAMPO DELIMITADOR
+*
+         DFHMDF POS=(21,33),                                           X
+               LENGTH=0,                                               X
+               ATTRB=ASKIP
+
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(22,01),                                           X
+               LENGTH=79,                                              X
+               ATTRB=ASKIP,                                            X
+               INITIAL='-----------------------------------------------X
+               --------------------------------',                      X
+               COLOR=YELLOW
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(23,01),                                           X
+               LENGTH=4,                                               X
+               ATTRB=ASKIP,                                            X
+               COLOR=RED,                                              X
+               INITIAL='USR:'
+*
+* CAMPO VARIAVEL
+*
+T4USER   DFHMDF POS=(23,06),                                           X
+               LENGTH=8,                                               X
+               ATTRB=(ASKIP,BRT),                                      X
+               PICOUT='X(08)'
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(23,15),                                           X
+               LENGTH=57,                                              X
+               ATTRB=ASKIP,                                            X
+               COLOR=TURQUOISE,                                        X
+               INITIAL='TECLAS VALIDAS: ENTER=PROCESSA TELA  PF3=SAIR  X
+               PF5=LIMPAR'
+*
+*
+* CAMPO CONSTANTE
+*
+         DFHMDF POS=(24,01),                                           X
+               LENGTH=9,                                               X
+               ATTRB=ASKIP,                                            X
+               COLOR=RED,                                              X
+               INITIAL='MENSAGEM:'
+*
+* CAMPO VARIAVEL
+*
+T4MSG    DFHMDF POS=(24,11),                                           X
+               LENGTH=60,                                              X
+               ATTRB=(ASKIP,BRT),                                      X
+               PICOUT='X(60)'
+*
+         DFHMSD TYPE=FINAL
+         END
+

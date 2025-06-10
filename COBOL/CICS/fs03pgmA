@@ -66,7 +66,7 @@
 
            IF EIBCALEN EQUAL 0
               MOVE +80                     TO WS-LENGTH
-              MOVE 'utilize a opca a da transacao'
+              MOVE 'utilize a opcao a da transacao'
                                            TO WS-MSG-ERRO
                  PERFORM 999-ENCERRA-TRANSACAO
            END-IF
