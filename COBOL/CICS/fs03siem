@@ -1,0 +1,437 @@
+      *----------------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *----------------------------------------------------------------*
+       PROGRAM-ID.                         FS03SIEM.
+       AUTHOR.                             FELIPE.
+
+      *----------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *----------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+
+      *----------------------------------------------------------------*
+       DATA                                DIVISION.
+      *----------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *----------------------------------------------------------------*
+       77  WS-MSG-ERRO                     PIC X(80).
+       77  WS-LENGTH                       PIC S9(04) COMP.
+
+       01  WS-VAR-TEMPO.
+           05 WS-DATA                      PIC X(10).
+           05 WS-HORARIO                   PIC X(08).
+
+       01  WS-DFHCOMMAREA.
+           05 WS-FASE                      PIC X(01).
+
+           COPY fs03SML.
+           COPY DFHAID.
+           COPY DFHBMSCA.
+
+       77  WS-QUEUE-NAME                   PIC X(08)
+                                                   VALUE 'SMLQUEUE'.
+
+       77  WS-ITEM                         PIC 9(04) COMP.
+
+       77  WS-TXM-CALC                     PIC 9(02)V9(10).
+       77  WS-TXM                          PIC 9(02)V9(04).
+       77  WS-VAL                          PIC 9(10)V99.
+       77  WS-PAR                          PIC 9(02).
+       77  WS-VAL-P                        PIC 9(10)V99.
+
+       77  WS-NUM-SIMULACAO                PIC 9(05).
+
+      *----------------------------------------------------------------*
+       LINKAGE                             SECTION.
+      *----------------------------------------------------------------*
+       01  DFHCOMMAREA.
+           05 OCCURS 0 TO 24576 TIMES DEPENDING ON EIBCALEN
+                                           PIC X(01).
+      *----------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *----------------------------------------------------------------*
+           EXEC CICS HANDLE CONDITION
+              MAPFAIL (999-MAPFAIL)
+              ERROR   (999-ERROR  )
+           END-EXEC
+
+      * SELETOR DE FASE - A CONSULTA POSSUI 4 FASES
+      *    FASE 1 - ENVIA O MAPA PARA O TERMINAL
+      *    FASE 2 - TRATA O CAMPO T2COD (CHAVE)
+      *    FASE 3 - TRATA OS CAMPOS DE DADOS (NAO CHAVE)
+      *
+           MOVE DFHCOMMAREA                TO WS-DFHCOMMAREA
+
+           IF EIBCALEN = 0
+              MOVE '1'                     TO WS-FASE
+           END-IF
+           .
+
+           EVALUATE WS-FASE
+              WHEN '1' PERFORM 100-FASE1
+              WHEN '2' PERFORM 200-FASE2
+              WHEN '3' PERFORM 300-FASE3
+              WHEN OTHER
+                 MOVE +80                  TO WS-LENGTH
+                 MOVE 'ERRO NO NUMERO DA FASE'
+                                           TO WS-MSG-ERRO
+                 PERFORM 999-ENCERRA-TRANSACAO
+           END-EVALUATE
+           .
+
+       100-FASE1.
+           MOVE LOW-VALUES                 TO MAPASMLO
+           MOVE -1                         TO T2NOMEL
+           MOVE 'ENTRE O CODIGO DO PRODUTO PARA INCLUIR'
+                                           TO T2MSGO
+           MOVE 1                          TO WS-ITEM
+
+            EXEC CICS READQ TS
+               QUEUE('SMLQUEUE')
+               INTO(WS-NUM-SIMULACAO)
+               ITEM(WS-ITEM)
+            END-EXEC
+
+            ADD 1 TO WS-NUM-SIMULACAO
+
+            EXEC CICS WRITEQ TS
+               QUEUE('SMLQUEUE')
+               FROM(WS-NUM-SIMULACAO)
+               ITEM(WS-ITEM)
+               REWRITE
+            END-EXEC
+
+           MOVE WS-NUM-SIMULACAO           TO T2NUMO
+           PERFORM 999-PROTECAO-FASE2
+           PERFORM 999-MANDA-TELA
+           PERFORM 999-CHAMA-FASE2
+           .
+
+       200-FASE2.
+           EXEC CICS HANDLE AID
+              ENTER   (210-ENTER)
+              PF3     (220-PF3)
+              PF5     (230-PF5)
+              CLEAR   (230-PF5)
+              ANYKEY  (240-ANYKEY)
+           END-EXEC
+
+           EXEC CICS RECEIVE
+              MAP   ('MAPASML')
+              MAPSET('fs03SML')
+              INTO  (MAPASMLI)
+           END-EXEC
+           .
+
+       210-ENTER.
+
+             IF T2NOMEL  = 0 OR T2NOMEI  EQUAL SPACES OR
+                T2DDDL   = 0 OR
+                T2TELL   = 0 OR
+                T2VALL   = 0
+                MOVE 'FAVOR PREENCHER TODOS OS CAMPOS'
+                                           TO T2MSGO
+                PERFORM 999-TRATA-FASE2
+             END-IF
+
+             EXEC CICS BIF DEEDIT
+                 FIELD(T2VALI)
+             END-EXEC
+
+             IF T2VALI = 0
+                MOVE 'VALOR INVALIDO PARA O EMPRESTIMO'
+                                           TO T2MSGO
+                PERFORM 999-TRATA-FASE2
+             END-IF
+
+             MOVE 2                        TO WS-ITEM
+
+             EXEC CICS READQ TS
+                 QUEUE('SMLQUEUE')
+                 INTO(WS-TXM)
+                 ITEM(WS-ITEM)
+             END-EXEC
+
+             PERFORM 999-MOVES
+             .
+       220-PF3.
+           PERFORM 999-ENCERRA-TRANSACAO
+           .
+
+       230-PF5.
+           PERFORM 999-CHAMA-FASE1
+           .
+
+       240-ANYKEY.
+           MOVE 'TECLA PRESSIONADA INVALIDA!'
+                                           TO T2MSGO
+           PERFORM 999-TRATA-FASE2
+           .
+
+       300-FASE3.
+           EXEC CICS HANDLE AID
+              ENTER   (310-ENTER)
+              PF3     (320-PF3)
+              PF5     (330-PF5)
+              CLEAR   (330-PF5)
+              ANYKEY  (340-ANYKEY)
+           END-EXEC
+
+           EXEC CICS RECEIVE
+              MAP   ('MAPASML')
+              MAPSET('fs03SML')
+              INTO  (MAPASMLI)
+           END-EXEC
+           .
+
+       310-ENTER.
+              IF T2CONFL EQUAL 0       OR
+                 T2CONFI NOT EQUAL 'S' AND 'N'
+                 MOVE 'DIGITE APENAS S(SIM) OU N(NAO)'
+                                              TO T2MSGO
+                 PERFORM 999-TRATA-FASE3
+              END-IF
+
+              IF T2CONFI = 'S'
+                 PERFORM 100-FASE1
+              ELSE
+                 PERFORM 320-PF3
+              END-IF
+
+              PERFORM 320-PF3
+              .
+
+       320-PF3.
+           PERFORM 999-ENCERRA-TRANSACAO.
+
+       330-PF5.
+           PERFORM 999-CHAMA-FASE1
+           .
+
+       340-ANYKEY.
+           MOVE 'TECLA PRESSIONADA INVALIDA!'
+                                           TO T2MSGO
+           PERFORM 999-TRATA-FASE3
+           .
+
+       999-PROTECAO-FASE2.
+      * DESPROTEGER
+           MOVE DFHUNIMD                   TO T2NOMEA
+           MOVE DFHUNIMD                   TO T2DDDA
+           MOVE DFHUNIMD                   TO T2TELA
+           MOVE DFHUNINT                   TO T2VALA
+
+      * OCULTAR
+           MOVE '@'                        TO TLIN1A
+           MOVE '@'                        TO TRESSA
+           MOVE '@'                        TO TLIN2A
+           MOVE '@'                        TO T2TXMLA
+           MOVE '@'                        TO T2TXMPA
+           MOVE '@'                        TO T2P12CA
+           MOVE '@'                        TO T2P24CA
+           MOVE '@'                        TO T2P36CA
+           MOVE '@'                        TO T2P48CA
+      * MOSTRAR
+           MOVE DFHBMPRF                   TO T2NUMO
+      * PROTEGER
+           MOVE DFHBMPRF                   TO T2NUMA
+           MOVE DFHBMPRF                   TO T2TXMA
+           MOVE DFHBMPRF                   TO T2P12A
+           MOVE DFHBMPRF                   TO T2P24A
+           MOVE DFHBMPRF                   TO T2P36A
+           MOVE DFHBMPRF                   TO T2P48A
+           MOVE DFHBMPRF                   TO T2CONFA
+
+      * UNDERLINE
+           MOVE DFHUNDLN                   TO T2NUMH
+           MOVE DFHUNDLN                   TO T2NOMEH
+           MOVE DFHUNDLN                   TO T2DDDH
+           MOVE DFHUNDLN                   TO T2TELH
+           MOVE DFHUNDLN                   TO T2VALH
+
+      * TIRAR UNDERLINE
+           MOVE DFHALL                     TO T2TXMH
+           MOVE DFHALL                     TO T2P12H
+           MOVE DFHALL                     TO T2P24H
+           MOVE DFHALL                     TO T2P36H
+           MOVE DFHALL                     TO T2P48H
+           MOVE DFHALL                     TO T2CONFH
+           .
+
+       999-PROTECAO-FASE3.
+      * DESPROTEGER
+           MOVE DFHUNIMD                   TO T2CONFA
+
+      * PROTEGER
+           MOVE DFHBMPRF                   TO T2TELA
+           MOVE DFHBMPRF                   TO T2VALA
+           MOVE DFHBMPRF                   TO T2TXMA
+           MOVE DFHBMPRF                   TO T2P12A
+           MOVE DFHBMPRF                   TO T2P24A
+           MOVE DFHBMPRF                   TO T2P36A
+           MOVE DFHBMPRF                   TO T2P48A
+           MOVE DFHBMPRF                   TO T2NUMO
+
+      * MOSTRAR
+           MOVE DFHBMASB                   TO TLIN1A
+           MOVE DFHBMASB                   TO TRESSA
+           MOVE DFHBMASB                   TO TLIN2A
+           MOVE DFHBMASB                   TO T2TXMLA
+           MOVE DFHBMASB                   TO T2TXMPA
+           MOVE DFHBMASB                   TO T2TXMA
+           MOVE DFHBMASB                   TO T2P12CA
+           MOVE DFHBMASB                   TO T2P24CA
+           MOVE DFHBMASB                   TO T2P36CA
+           MOVE DFHBMASB                   TO T2P48CA
+      * UNDERLINE
+           MOVE DFHUNDLN                   TO T2DDDH
+           MOVE DFHUNDLN                   TO T2TELH
+           MOVE DFHUNDLN                   TO T2VALH
+           MOVE DFHUNDLN                   TO T2TXMH
+           MOVE DFHUNDLN                   TO T2P12H
+           MOVE DFHUNDLN                   TO T2P24H
+           MOVE DFHUNDLN                   TO T2P36H
+           MOVE DFHUNDLN                   TO T2P48H
+
+      * TIRAR UNDERLINE
+           MOVE DFHALL                     TO T2NUMH
+           MOVE DFHALL                     TO T2CONFH
+           .
+
+       999-MANDA-TELA.
+            MOVE EIBTRMID                  TO T2TERMO
+            MOVE EIBTRNID                  TO T2TRANO
+            MOVE EIBTASKN                  TO T2TASKO
+            MOVE WS-FASE                   TO T2FASEO
+
+            MOVE 'SIMULACAO DE EMPRESTIMOS' TO T2TELAO
+
+            EXEC CICS ASSIGN
+               USERID(T2USRO)
+            END-EXEC
+
+            EXEC CICS LINK
+                PROGRAM('AUXCICS1')
+                COMMAREA(WS-VAR-TEMPO)
+                LENGTH(+18)
+            END-EXEC
+
+            MOVE WS-DATA                   TO T2DATAO
+            MOVE WS-HORARIO                TO T2HORAO
+
+            EXEC CICS SEND
+               MAP ('MAPASML')
+               MAPSET('fs03SML')
+               FROM(MAPASMLO)
+               ERASE FREEKB ALARM CURSOR
+            END-EXEC
+            .
+
+       999-CHAMA-FASE1.
+           MOVE '1'                        TO WS-FASE
+
+           EXEC CICS XCTL
+               PROGRAM('fs03SIEM')
+               COMMAREA(WS-DFHCOMMAREA)
+               LENGTH(LENGTH OF WS-DFHCOMMAREA)
+           END-EXEC
+           .
+
+       999-CHAMA-FASE2.
+           MOVE '2'                        TO WS-FASE
+
+           EXEC CICS RETURN
+               TRANSID('F03K')
+               COMMAREA(WS-DFHCOMMAREA)
+               LENGTH(LENGTH OF WS-DFHCOMMAREA)
+           END-EXEC
+           .
+
+       999-CHAMA-FASE3.
+           MOVE '3'                        TO WS-FASE
+
+           EXEC CICS RETURN
+               TRANSID('F03K')
+               COMMAREA(WS-DFHCOMMAREA)
+               LENGTH(LENGTH OF WS-DFHCOMMAREA)
+           END-EXEC
+           .
+
+       999-TRATA-FASE2.
+           MOVE -1                         TO T2NUML
+           PERFORM 999-PROTECAO-FASE2
+           PERFORM 999-MANDA-TELA
+           PERFORM 999-CHAMA-FASE2
+           .
+
+       999-TRATA-FASE3.
+           MOVE -1                         TO T2CONFL
+      *          1234567890123456789012345
+           MOVE 'CONFIRMA INCLUSAO (S/N)?' TO T2ACAOO
+
+           PERFORM 999-PROTECAO-FASE3
+           PERFORM 999-MANDA-TELA
+           PERFORM 999-CHAMA-FASE3
+           .
+
+       999-ENCERRA-TRANSACAO.
+            MOVE +80                        TO WS-LENGTH
+            MOVE 'FIM DO PROGRAMA'          TO WS-MSG-ERRO
+
+            EXEC CICS SEND TEXT
+               FROM (WS-MSG-ERRO)
+               LENGTH(WS-LENGTH)
+               ERASE FREEKB ALARM
+            END-EXEC
+
+            EXEC CICS RETURN
+            END-EXEC
+            .
+
+       999-MAPFAIL.
+           MOVE +80                        TO WS-LENGTH
+           MOVE 'ERRO MAPA fs03SML'        TO WS-MSG-ERRO
+           PERFORM 999-ENCERRA-TRANSACAO
+           .
+
+       999-ERROR.
+           MOVE +80                        TO WS-LENGTH
+           MOVE 'ERRO GENERICO fs03SIEM'   TO WS-MSG-ERRO
+           PERFORM 999-ENCERRA-TRANSACAO
+           .
+
+       999-MOVES.
+
+            MOVE T2VALI                  TO WS-VAL
+            MOVE WS-VAL                  TO T2VALO
+            MOVE WS-TXM                  TO WS-TXM-CALC
+
+            MOVE 12                      TO WS-PAR
+            PERFORM 999-CONTA
+            MOVE WS-VAL-P                TO T2P12O
+
+            MOVE 24                      TO WS-PAR
+            PERFORM 999-CONTA
+            MOVE WS-VAL-P                TO T2P24O
+
+            MOVE 36                      TO WS-PAR
+            PERFORM 999-CONTA
+            MOVE WS-VAL-P                TO T2P36O
+
+            MOVE 48                      TO WS-PAR
+            PERFORM 999-CONTA
+            MOVE WS-VAL-P                TO T2P48O
+
+            COMPUTE WS-TXM = 100 * WS-TXM
+
+            MOVE WS-TXM                  TO T2TXMO
+
+           PERFORM 999-TRATA-FASE3
+           .
+       999-CONTA.
+           COMPUTE
+           WS-VAL-P =
+           (WS-VAL * WS-TXM-CALC) / (1 - 1 / (1 + WS-TXM-CALC)** WS-PAR)
+           .

@@ -1,0 +1,221 @@
+      *--------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *-------------------------------------------------------------*
+       PROGRAM-ID.                         PREPROV1.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT CLIATIVO ASSIGN TO UT-S-CLIATIVO
+           FILE STATUS IS FS-CLIATIVO
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  CLIATIVO
+           LABEL RECORD OMITTED
+           RECORDING MODE IS F
+           RECORD CONTAINS 75 CHARACTERS
+           DATA RECORD IS REG-CLIATIVO
+           .
+       01  REG-CLIATIVO                     PIC X(75).
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+
+
+      *    BOOK DAS VARIAVEIS HOSPEDEIRAS
+           EXEC SQL
+               INCLUDE DCLCLI13
+           END-EXEC
+           .
+           EXEC SQL
+               INCLUDE DCLCONTA
+           END-EXEC
+           .
+
+
+      *    BOOK DAS VARIAVEIS PARA USO DO SQL
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC
+
+           COPY CLI13BK.
+           COPY BKSAIDA.
+
+
+       01  WS-CONTADORES-COMP.
+           05  WS-CTLIDO                   PIC 9(05) COMP.
+           05  WS-CTREG                    PIC 9(05) COMP.
+           05  WS-CTDESC                   PIC 9(05) COMP.
+
+       01  WS-CONTADORES-COM-F.
+           05  WS-CTLIDO-F                 PIC ZZZ9.
+           05  WS-CTREG-F                  PIC ZZZ9.
+           05  WS-CTDESC-F                 PIC ZZZ9.
+
+       77  WS-SQLCODE                      PIC +9(9).
+
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-CLIATIVO                      PIC X(02).
+           88 SUCESSO                              VALUE '00'.
+           88 FIM-ARQ                              VALUE '10'.
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+               UNTIL SQLCODE = +100
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           INITIALIZE WS-CONTADORES-COMP
+
+           MOVE 0                          TO WS-CTLIDO
+                                              WS-CTREG
+                                              WS-CTDESC
+      * DECLARACAO DO CURSOR PARA O ARQUIVO A1034602
+
+           EXEC SQL
+               DECLARE CURSORC1 CURSOR FOR
+                   SELECT C.NOME,
+                          C.CPF,
+                          T.TIPO_CONTA,
+                          T.SALDO
+                   FROM CLIENTE13 C
+                   JOIN CONTA T ON C.ID_CLIENTE = T.ID_CLIENTE
+                   WHERE C.SITUACAO = 'A' AND T.STATUS = 'A'
+           END-EXEC
+
+      * ABERTURA DO CURSOR
+           EXEC SQL
+               OPEN CURSORC1
+           END-EXEC
+
+           IF SQLCODE NOT EQUAL 0
+               DISPLAY "ERRO AO ABRIR CURSOR"
+               MOVE SQLCODE                  TO WS-SQLCODE
+               GO TO 9000-ERRO-DB2
+           END-IF
+
+           OPEN OUTPUT CLIATIVO
+
+           IF NOT SUCESSO
+               DISPLAY "ERRO ABERTURA ARQUIVO SAIDA"
+               DISPLAY FS-CLIATIVO
+               GO TO 9000-ERRO
+           END-IF
+
+           PERFORM 1500-LER-CURSOR
+           .
+
+       1500-LER-CURSOR.
+           INITIALIZE DCLCLI13
+           INITIALIZE DCLCONTA
+
+           EXEC SQL
+               FETCH CURSORC1
+               INTO :DCL-NOME,
+                    :DCL-CPF,
+                    :DCLCONTA-TIPO-CONTA,
+                    :DCLCONTA-SALDO
+           END-EXEC
+
+           IF SQLCODE = 0
+               ADD 1 TO WS-CTLIDO
+           ELSE
+               IF SQLCODE NOT = +100
+                   DISPLAY "ERRO DE LEITURA CURSOR"
+                   MOVE SQLCODE    TO WS-SQLCODE
+                   GO TO 9000-ERRO-DB2
+               END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           PERFORM 2500-GRAVAR
+
+           PERFORM 1500-LER-CURSOR
+           .
+
+       2500-GRAVAR.
+           MOVE DCL-NOME-TEXT             TO BKS-NOME
+           MOVE DCL-CPF                   TO BKS-CPF
+           MOVE DCLCONTA-TIPO-CONTA       TO BKS-TIPO-CONTA
+           MOVE DCLCONTA-SALDO            TO BKS-SALDO
+      *    MOVIMENTACAO CONCATENAR
+
+           WRITE REG-CLIATIVO FROM BK-SAIDA
+
+           IF SUCESSO
+               ADD 1 TO WS-CTREG
+           ELSE
+               DISPLAY 'ERRO GRAVACAO DO ARQUIVO'
+               DISPLAY FS-CLIATIVO
+               GO TO 9000-ERRO
+           END-IF
+           .
+
+       3000-TERMINO.
+           MOVE WS-CTLIDO                    TO WS-CTLIDO-F
+           MOVE WS-CTREG                     TO WS-CTREG-F
+           MOVE WS-CTDESC                    TO WS-CTDESC-F
+
+           EXEC SQL
+               CLOSE CURSORC1
+           END-EXEC
+
+           IF SQLCODE NOT EQUAL 0
+               DISPLAY "ERRO AO FECHAR CURSOR"
+               MOVE SQLCODE TO WS-SQLCODE
+               GO TO 9000-ERRO-DB2
+           END-IF
+
+           CLOSE CLIATIVO
+           IF NOT SUCESSO
+               DISPLAY "ERRO FECHAMENTO CLIATIVO"
+               DISPLAY FS-CLIATIVO
+               GO TO 9000-ERRO
+           END-IF
+
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '                 WEYLAND-YUTANI                   '
+           DISPLAY '--------------------------------------------------'
+           DISPLAY 'TOTAL DE LIDOS....................' WS-CTLIDO-F
+           DISPLAY 'TOTAL DE REGISTRADOS..............' WS-CTREG-F
+           DISPLAY 'TOTAL DE DESCARTADOS..............' WS-CTDESC-F
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL CLIATIVO              '
+           DISPLAY '=================================================='
+           .
+
+       9000-ERRO.
+           DISPLAY '9000-ERRO'
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '   XXX      TERMINO ANORMAL DO CLIATIVO     XXX   '
+           DISPLAY '--------------------------------------------------'
+           STOP RUN
+           .
+
+       9000-ERRO-DB2.
+           DISPLAY '9000-ERRO-DB2'
+           DISPLAY '=================================================='
+           DISPLAY 'CODIGO...: ' WS-SQLCODE
+           DISPLAY '=================================================='
+           .
+

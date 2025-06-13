@@ -1,0 +1,22 @@
+[Session Profile]
+Name=TREINO
+Host=179.127.27.106,24778
+TerminalType=3279,24,80,IBM-3278-2-E
+LogFile=TREINO.log
+KeyboardMapName=3270 Default
+ColorSchemeName=3270 Default
+KeypadToolbarName=3270 Default
+ScreenFont=15,8,15,8,0,0,400,0,0,0,0,1,2,2,49,Courier New
+PrinterFont=15,8,0,15,8,0,0,400,0,0,0,0,1,2,2,49,Courier New
+SessionOptions=0
+HostOptions=0
+TerminalOptions=0
+FontOptions=1
+PrintOptions=2
+DisplayOptions=2576
+KeyboardOptions=2
+EditOptions=1
+SessionNumber=-1
+TypeAheadBufferSize=512
+ReconnectDelay=0
+FileTransfer=,,,,IND$FILE,96,0,0,0,0,0

@@ -1,7 +1,7 @@
       *----------------------------------------------------------------*
        IDENTIFICATION                      DIVISION.
       *----------------------------------------------------------------*
-       PROGRAM-ID.                         FS03PGMA.
+       PROGRAM-ID.                         FS03PGMF.
        AUTHOR.                             FELIPE.
 
       *----------------------------------------------------------------*
@@ -29,53 +29,39 @@
            COPY FS03CAD.
            COPY DFHAID.
            COPY DFHBMSCA.
-      *    COPY BOOK DB2           
-                             
-             EXEC SQL                
-                INCLUDE BOOK          
-             END-EXEC                
-                             
-             EXEC SQL                
-                INCLUDE SQLCA         
-             END-EXEC                
-                             
 
-      * VARIAVEL ESPELHO DO VCADPRD
-       01  WS-REG-VCADPRD.
-           05 WS-CODPROD                   PIC X(04).
-           05 WS-DESCPROD                  PIC X(20).
-           05 WS-UNIDPROD                  PIC X(05).
-           05 WS-LOCALPROD                 PIC X(05).
-           05 WS-QTDEST                    PIC 9(05).
-           05 WS-QTDMAX                    PIC 9(05).
-           05 WS-QTDMIN                    PIC 9(05).
-           05 WS-PRECOCOMPRA               PIC 9(06)V99.
-           05 WS-PRECOVENDA                PIC 9(06)V99.
-           05 WS-PERCOMIS                  PIC 9(02)V99.     
+           EXEC SQL
+              INCLUDE BKTBCAD
+           END-EXEC.
+
+           EXEC SQL
+              INCLUDE SQLCA
+           END-EXEC.
+
       *----------------------------------------------------------------*
        LINKAGE                             SECTION.
       *----------------------------------------------------------------*
        01  DFHCOMMAREA.
-           05 OCCURS 0 TO 24579 TIMES DEPENDING ON EIBCALEN
+           05 OCCURS 0 TO 24576 TIMES DEPENDING ON EIBCALEN
                                            PIC X(01).
       *----------------------------------------------------------------*
        PROCEDURE                           DIVISION.
       *----------------------------------------------------------------*
            EXEC CICS HANDLE CONDITION
-              MAPFAIL(999-MAPFAIL)
-              ERROR(999-ERROR)
+              MAPFAIL (999-MAPFAIL)
+              ERROR   (999-ERROR  )
            END-EXEC
 
       * SELETOR DE FASE - A CONSULTA POSSUI 3 FASES
       *    FASE 1 - ENVIA O MAPA PARA O TERMINAL
       *    FASE 2 - TRATA O CAMPO T2COD
-      *    FASE 3 - TRATA O CAMPO T2conf
+      *    FASE 3 - TRATA O CAMPO T2CONF
       *
            MOVE DFHCOMMAREA                TO WS-DFHCOMMAREA
 
            IF EIBCALEN EQUAL 0
               MOVE +80                     TO WS-LENGTH
-              MOVE 'utilize a opca f da transacao'
+              MOVE 'UTILIZE A OPCAO F DA TRANSACAO F03M'
                                            TO WS-MSG-ERRO
                  PERFORM 999-ENCERRA-TRANSACAO
            END-IF
@@ -95,9 +81,9 @@
        100-FASE1.
            MOVE LOW-VALUES                 TO MAPACADO
            MOVE -1                         TO T2CODL
-           MOVE 'entre o codigo do produtos para consultar'
+           MOVE 'ENTRE O CODIGO DO PRODUTO PARA CONSULTAR'
                                            TO T2MSGO
-           perform 999-protecao-FASE2
+           PERFORM 999-PROTECAO-FASE2
            PERFORM 999-MANDA-TELA
            PERFORM 999-CHAMA-FASE2
            .
@@ -120,77 +106,78 @@
 
        210-ENTER.
            IF T2CODL EQUAL 0 OR T2CODI EQUAL SPACES
-              MOVE 'CODIGO NAO INFORMADOR TENTE NOVAMENTE'
+              MOVE 'CODIGO NAO INFORMADO - TENTE NOVAMENTE'
                                            TO T2MSGO
               PERFORM 999-TRATA-FASE2
            END-IF
 
            MOVE T2CODI                     TO CODPROD
-                                          
-             EXEC SQL                                  
-             SELECT CODPROD,                        
-                   DESCPROD,                       
-                   UNIDPROD,                       
-                   LOCALPROD,                      
-                   QTDEST,                         
-                   QTDMAX,                         
-                   QTDMIN,                         
-                   PRECOCOMPRA,                    
-                   PRECOVENDA,                     
-                   PRECOMIS                        
-                FROM TBPRODUTO                         
-                INTO :CODPROD,                         
-                      :DESCPROD,                        
-                      :UNIDPROD,                        
-                      :LOCALPROD,                       
-                      :QTDEST,                          
-                      :QTDMAX,                          
-                      :QTDMIN,                          
-                      :PRECOCOMPRA,                     
-                      :PRECOVENDA,                      
-                      :PRECOMIS                         
-                WHERE CODPROD = :CODPROD               
-                INTO(WS-REG-VCADPRD)                   
-             END-EXEC                                  
-           IF SQLCODE = +100           
-              PERFORM 999-NOTFND       
-           END-IF                      
-                                       
-           MOVE CODPRODTO               TO T2CODO       
-           MOVE DESCPROD-TEXTTO         TO T2DESCO
-           MOVE UNIDPRODTO              TO T2UNIDO      
-           MOVE LOCALPRODTO             TO T2LOCALO   
-           MOVE QTDESTTO                TO T2ESTO        
-           MOVE QTDMAXTO                TO T2MAXO        
-           MOVE QTDMINTO                TO T2MINO        
-           MOVE PRECOCOMPRATO           TO T2COMPO  
-           MOVE PRECOVENDATO            TO T2VENDO   
-           MOVE PRECOMISTO              TO T2COMISO    
-  
+
+           EXEC SQL
+              SELECT CODPROD
+                    ,DESCPROD
+                    ,UNIDPROD
+                    ,LOCALPROD
+                    ,QTDEST
+                    ,QTDMAX
+                    ,QTDMIN
+                    ,PRECOCOMPRA
+                    ,PRECOVENDA
+                    ,PRECOMIS
+              INTO   :CODPROD
+                    ,:DESCPROD
+                    ,:UNIDPROD
+                    ,:LOCALPROD
+                    ,:QTDEST
+                    ,:QTDMAX
+                    ,:QTDMIN
+                    ,:PRECOCOMPRA
+                    ,:PRECOVENDA
+                    ,:PRECOMIS
+              FROM TBPRODUTO
+              WHERE CODPROD = :CODPROD
+           END-EXEC
+
+           IF SQLCODE = +100
+              PERFORM 999-NOTFND
+           END-IF
+
+      * MOVER OS CAMPOS DA HOSPEDEIRA PARA A TELA
+           MOVE CODPROD                    TO T2CODO
+           MOVE DESCPROD-TEXT              TO T2DESCO
+           MOVE UNIDPROD                   TO T2UNIDO
+           MOVE LOCALPROD                  TO T2LOCALO
+           MOVE QTDEST                     TO T2ESTO
+           MOVE QTDMAX                     TO T2MAXO
+           MOVE QTDMIN                     TO T2MINO
+           MOVE PRECOCOMPRA                TO T2COMPO
+           MOVE PRECOVENDA                 TO T2VENDO
+           MOVE PRECOMIS                   TO T2COMISO
+
            PERFORM 999-TRATA-FASE3
            .
 
-        220-PF3.
-           MOVE '1'                        to ws-fase  
+       220-PF3.
+           MOVE '1'                        TO WS-FASE
 
            EXEC CICS XCTL
-             PROGRAM ('FS03PGMM')
-             COMMAREA(WSDFHCOMMAREA)
-             LENGTH(LENGTH OF WS-DFHCOMMAREA)
+               PROGRAM('FS03PGMM')
+               COMMAREA(WS-DFHCOMMAREA)
+               LENGTH(LENGTH OF WS-DFHCOMMAREA)
            END-EXEC
            .
-           
-        230-PF5.
+
+       230-PF5.
            PERFORM 999-CHAMA-FASE1
            .
 
-        240-ANYKEY.
+       240-ANYKEY.
            MOVE 'TECLA PRESSIONADA INVALIDA!'
                                            TO T2MSGO
            PERFORM 999-TRATA-FASE2
            .
 
-        300-FASE3.
+       300-FASE3.
            EXEC CICS HANDLE AID
               ENTER   (310-ENTER)
               PF3     (320-PF3)
@@ -206,7 +193,7 @@
            END-EXEC
            .
 
-        310-ENTER.
+       310-ENTER.
            IF T2CONFL EQUAL 0       OR
               T2CONFI NOT EQUAL 'S' AND 'N'
               MOVE 'DIGITE APENAS S(SIM) OU N(NAO)'
@@ -241,9 +228,9 @@
            PERFORM 999-TRATA-FASE3
            .
 
-        999-protecao-fase2.
+       999-PROTECAO-FASE2.
       * DESPROTEGER
-           MOVE  DFHUNIMD                  TO T2CODA
+           MOVE DFHUNIMD                   TO T2CODA
       * PROTEGER
            MOVE DFHBMPRF                   TO T2DESCA
            MOVE DFHBMPRF                   TO T2UNIDA
@@ -255,8 +242,13 @@
            MOVE DFHBMPRF                   TO T2VENDA
            MOVE DFHBMPRF                   TO T2COMISA
            MOVE DFHBMPRF                   TO T2CONFA
-           . 
-        999-PROTECAO-FASE3.
+      * UNDERLINE
+           MOVE DFHUNDLN                   TO T2CODH
+      * TIRAR UNDERLINE
+           MOVE DFHALL                     TO T2CONFH
+           .
+
+       999-PROTECAO-FASE3.
       * DESPROTEGER
            MOVE DFHUNIMD                   TO T2CONFA
       * PROTEGER
@@ -270,9 +262,13 @@
            MOVE DFHBMPRF                   TO T2COMPA
            MOVE DFHBMPRF                   TO T2VENDA
            MOVE DFHBMPRF                   TO T2COMISA
+      * UNDERLINE
+           MOVE DFHUNDLN                   TO T2CONFH
+      * TIRAR O UNDERLINE
+           MOVE DFHALL                     TO T2CODH
            .
 
-        999-ENCERRA-TRANSACAO.
+       999-ENCERRA-TRANSACAO.
             EXEC CICS SEND TEXT
                FROM (WS-MSG-ERRO)
                LENGTH(WS-LENGTH)
@@ -283,14 +279,16 @@
             END-EXEC
             .
 
-        999-MANDA-TELA.
+       999-MANDA-TELA.
             MOVE EIBTRMID                  TO T2TERMO
             MOVE EIBTRNID                  TO T2TRANO
             MOVE EIBTASKN                  TO T2TASKO
             MOVE WS-FASE                   TO T2FASEO
 
+            MOVE 'CONSULTA DB2'            TO T2TELAO
+
             EXEC CICS ASSIGN
-               USERID(T2USRO)
+               USERID(T2USERO)
             END-EXEC
 
             EXEC CICS LINK
@@ -310,68 +308,73 @@
             END-EXEC
             .
 
-        999-CHAMA-FASE1.
-            MOVE '1'                       TO WS-FASE
+       999-CHAMA-FASE1.
+           MOVE '1'                        TO WS-FASE
 
-            EXEC CICS XCTL
-                PROGRAM('FS03PGMM')
-                COMMAREA(WS-DFHCOMMAREA)
-                LENGTH(LENGTH OF WS-DFHCOMMAREA)
-            END-EXEC
-            .
+           EXEC CICS XCTL
+               PROGRAM('FS03PGMF')
+               COMMAREA(WS-DFHCOMMAREA)
+               LENGTH(LENGTH OF WS-DFHCOMMAREA)
+           END-EXEC
+           .
 
-        999-CHAMA-FASE2.
-            MOVE '2'                       TO WS-FASE
+       999-CHAMA-FASE2.
+           MOVE '2'                        TO WS-FASE
 
-            EXEC CICS RETURN
-                TRANSID('F03F')
-                COMMAREA(WS-DFHCOMMAREA)
-                LENGTH(LENGTH OF WS-DFHCOMMAREA)
-            END-EXEC
-            .
-        999-TRATA-FASE2.
+           EXEC CICS RETURN
+               TRANSID('F03F')
+               COMMAREA(WS-DFHCOMMAREA)
+               LENGTH(LENGTH OF WS-DFHCOMMAREA)
+           END-EXEC
+           .
+
+       999-CHAMA-FASE3.
+           MOVE '3'                        TO WS-FASE
+
+           EXEC CICS RETURN
+               TRANSID('F03F')
+               COMMAREA(WS-DFHCOMMAREA)
+               LENGTH(LENGTH OF WS-DFHCOMMAREA)
+           END-EXEC
+           .
+
+       999-TRATA-FASE2.
            MOVE -1                         TO T2CODL
            PERFORM 999-PROTECAO-FASE2
            PERFORM 999-MANDA-TELA
            PERFORM 999-CHAMA-FASE2
            .
-        999-TRATA-FASE3.
-           MOVE -1                         TO T2CONFO
+
+       999-TRATA-FASE3.
+           MOVE -1                         TO T2CONFL
       *          1234567890123456789012345
            MOVE 'CONSULTAR OUTRO (S/N)?'   TO T2ACAOO
-
-      * MOVER OS CAMPOS DO REGISTRO PARA A TELA
-           MOVE WS-CODPROD                 TO T2CODO
-           MOVE WS-DESCPROD                TO T2DESCO
-           MOVE WS-UNIDPROD                TO T2UNIDO
-           MOVE WS-LOCALPROD               TO T2LOCALO
-           MOVE WS-QTDEST                  TO T2ESTO
-           MOVE WS-QTDMAX                  TO T2MAXO
-           MOVE WS-QTDMIN                  TO T2MINO
-           MOVE WS-PRECOCOMPRA             TO T2COMPO
-           MOVE WS-PRECOVENDA              TO T2VENDO
-           MOVE WS-PERCOMIS                TO T2COMISO
 
            PERFORM 999-PROTECAO-FASE3
            PERFORM 999-MANDA-TELA
            PERFORM 999-CHAMA-FASE3
-
            .
+
        999-NOTFND.
            STRING 'PRODUTO '               DELIMITED BY SIZE
-                   WS-CODPROD              DELIMITED BY SPACE
-                   ' NAO LOCALIZADO'       DELIMITED BY SIZE
+                   T2CODI                  DELIMITED BY SPACE
+                   ' NAO LOCALIZADO PARA CONSULTAR'
+                                           DELIMITED BY SIZE
                                            INTO T2MSGO
+
+           MOVE LOW-VALUES                 TO T2CODO
+
            PERFORM 999-TRATA-FASE2
            .
 
-        999-MAPFAIL.
+       999-MAPFAIL.
+           MOVE +80                        TO WS-LENGTH
            MOVE 'ERRO MAPA FS03CAD'        TO WS-MSG-ERRO
            PERFORM 999-ENCERRA-TRANSACAO
            .
 
-        999-ERROR.
-           MOVE 'ERRO GENERICO FS03PGMA'   TO WS-MSG-ERRO
+       999-ERROR.
+           MOVE +80                        TO WS-LENGTH
+           MOVE 'ERRO GENERICO FS03PGMF'   TO WS-MSG-ERRO
            PERFORM 999-ENCERRA-TRANSACAO
            .
-

@@ -1,0 +1,83 @@
+      *--------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *-------------------------------------------------------------*
+       PROGRAM-ID.                         PREPROV2.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *--------------------------------------------------------------*
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *-----------------------------------------------------------
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+
+      *    BOOK DAS VARIAVEIS HOSPEDEIRAS
+           EXEC SQL
+               INCLUDE DCLCLI13
+           END-EXEC
+           .
+           EXEC SQL
+               INCLUDE DCLCONTA
+           END-EXEC
+           .
+
+
+      *    BOOK DAS VARIAVEIS PARA USO DO SQL
+           EXEC SQL
+               INCLUDE SQLCA
+           END-EXEC
+
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+           PERFORM 2000-PROCESSAR
+               UNTIL SQLCODE = +100
+           PERFORM 3000-TERMINO
+           GOBACK
+           .
+
+       2000-PROCESSAR.
+           PERFORM 2500-UPDATE
+           PERFORM 2600-UPDATE2
+           .
+
+       2500-UPDATE.
+           EXEC SQL
+               UPDATE CONTA
+                   SET STATUS = 'B'
+               WHERE SALDO < 100
+           END-EXEC
+           .
+
+       2600-UPDATE2.
+           EXEC SQL
+               UPDATE CLIENTE13
+                   SET SITUACAO = 'I'
+               WHERE ID_CLIENTE NOT IN(
+                SELECT ID_CLIENTE FROM CONTA WHERE STATUS = 'A'
+               )
+           END-EXEC
+           .
+
+       3000-TERMINO.
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '                 WEYLAND-YUTANI                   '
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL CLIATIVO              '
+           DISPLAY '=================================================='
+           .
+
+
+
