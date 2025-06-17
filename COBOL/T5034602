@@ -25,10 +25,10 @@
        FD  FILE4601
            LABEL RECORD OMITTED
            RECORDING MODE IS F
-           RECORD CONTAINS 75 CHARACTERS
+           RECORD CONTAINS 67 CHARACTERS
            DATA RECORD IS REG-FILE4601
            .
-       01  REG-FILE4601                     PIC X(75).
+       01  REG-FILE4601                     PIC X(67).
       *--------------------------------------------------------------*
        WORKING-STORAGE                     SECTION.
       *--------------------------------------------------------------*
@@ -46,7 +46,7 @@
            END-EXEC
 
            COPY BK034610.
- 
+
        01  WS-CONTADORES-COMP.
            05  WS-CTLIDO                   PIC 9(05) COMP.
            05  WS-CTREG                    PIC 9(05) COMP.
@@ -59,16 +59,20 @@
 
        77  WS-SQLCODE                      PIC +9(9).
 
-       01  WS-TAXAFIXA                     PIC 9(03)V99.
-           88 WS-FIXA1                     VALUE '112,50'.
-           88 WS-FIXA2                     VALUE '90,00'.
-           88 WS-FIXA3                     VALUE '120,00'.
-           88 WS-FIXA4                     VALUE '490,00'.
-       
+       77 WS-FIXA1                         PIC 9(03)V99.
+       77 WS-FIXA2                         PIC 9(03)V99.
+       77 WS-FIXA3                         PIC 9(03)V99.
+       77 WS-FIXA4                         PIC 9(03)V99.
+
        77  WS-TAXATOTAL                    PIC 9(04)V99.
        77  WS-SOBRA                        PIC 9(04)V99.
        77  WS-SALARIOAUX                   PIC S9(08)V99 COMP-3.
        77  WS-TAXAAUX                      PIC 9(04)V99.
+
+       01  INDICADORES.
+           05 IINSS                        PIC S9(04) COMP.
+           05 IIRRF                        PIC S9(04) COMP.
+           05 IDEPENDENTE                  PIC S9(04) COMP.
       *--------------------------------------------------------------*
       * VARIAVEIS DE FILE STATUS                                     *
       *--------------------------------------------------------------*
@@ -99,9 +103,9 @@
                           NOME,
                           TELEFONE,
                           SALARIOBASE,
-                          INSS,    
-                          IRRF,       
-                          DEPENDENTE  
+                          INSS,
+                          IRRF,
+                          DEPENDENTE
                    FROM FUNCIONARIOS
            END-EXEC
 
@@ -129,20 +133,32 @@
 
        1500-LER-CURSOR.
            INITIALIZE DCLFUNC
-           
+
            EXEC SQL
                FETCH CURSORA1
                INTO :DCLFUNC-CPF,
                     :DCLFUNC-NOME,
                     :DCLFUNC-TELEFONE,
                     :DCLFUNC-SALARIOBASE,
-                    :DCLFUNC-INSS,    
-                    :DCLFUNC-IRRF,      
-                    :DCLFUNC-DEPENDENTE 
+                    :DCLFUNC-INSS          :IINSS,
+                    :DCLFUNC-IRRF          :IIRRF,
+                    :DCLFUNC-DEPENDENTE :IDEPENDENTE
            END-EXEC
 
            IF SQLCODE = 0
                ADD 1 TO WS-CTLIDO
+               IF IINSS LESS ZERO
+                  MOVE 0                    TO DCLFUNC-INSS
+               END-IF
+
+               IF IIRRF LESS ZERO
+                  MOVE 0                    TO DCLFUNC-IRRF
+               END-IF
+
+               IF IDEPENDENTE LESS ZERO
+                  MOVE 0                    TO DCLFUNC-IRRF
+               END-IF
+
            ELSE
                IF SQLCODE NOT = +100
                    DISPLAY "ERRO DE LEITURA CURSOR"
@@ -163,12 +179,20 @@
            .
 
        2000-PROCESSAR.
-           IF DCLFUNC-SALARIOBASE < 1500,00
+           MOVE 112,50                     TO WS-FIXA1
+           MOVE 90,00                      TO WS-FIXA2
+           MOVE 120,00                     TO WS-FIXA3
+           MOVE 490,00                     TO WS-FIXA4
+
+           IF DCLFUNC-SALARIOBASE <= 1500,00
                PERFORM 2100-FAIXA1
-               IF DCLFUNC-SALARIOBASE > 1500,01 AND  < 2500,00
+           ELSE
+               IF DCLFUNC-SALARIOBASE > 1500,01 AND  <= 2500,00
                    PERFORM 2200-FAIXA2
-                   IF DCLFUNC-SALARIOBASE > 2500,01 AND < 3500,00
+               ELSE
+                   IF DCLFUNC-SALARIOBASE > 2500,01 AND <= 3500,00
                        PERFORM 2300-FAIXA3
+                   ELSE
                        IF DCLFUNC-SALARIOBASE > 3500,01 AND < 7000,00
                            PERFORM 2400-FAIXA4
                        ELSE
@@ -180,21 +204,21 @@
 
            PERFORM 1500-LER-CURSOR
            .
+
        2100-FAIXA1.
            COMPUTE WS-TAXATOTAL = WS-SALARIOAUX * 0,075
-           
-           MOVE    
+
            PERFORM 2500-GRAVAR
            .
 
        2200-FAIXA2.
            ADD WS-FIXA1                      TO WS-TAXATOTAL
 
-           COMPUTE WS-SOBRA = 2500,00 - WS-SALARIOAUX        
-           COMPUTE WS-TAXAAUX = WS-SOBRA * 0,09    
-          
+           COMPUTE WS-SOBRA = WS-SALARIOAUX - 1500,01
+           COMPUTE WS-TAXAAUX = WS-SOBRA * 0,09
+
            ADD WS-TAXAAUX                    TO WS-TAXATOTAL
-                   
+
            PERFORM 2500-GRAVAR
            .
 
@@ -202,39 +226,38 @@
            ADD WS-FIXA1                      TO WS-TAXATOTAL
            ADD WS-FIXA2                      TO WS-TAXATOTAL
 
-           COMPUTE WS-SOBRA = 3500,00 - WS-SALARIOAUX        
-           COMPUTE WS-SOBRA * 0,12 = WS-TAXAAUX    
-          
+           COMPUTE WS-SOBRA = WS-SALARIOAUX - 2500,01
+           COMPUTE WS-TAXAAUX = WS-SOBRA * 0,12
+
            ADD WS-TAXAAUX                    TO WS-TAXATOTAL
-                   
+
            PERFORM 2500-GRAVAR
            .
-           
+
        2400-FAIXA4.
            ADD WS-FIXA1                      TO WS-TAXATOTAL
            ADD WS-FIXA2                      TO WS-TAXATOTAL
            ADD WS-FIXA3                      TO WS-TAXATOTAL
 
-           COMPUTE WS-SOBRA = 7000,00 - WS-SALARIOAUX        
-           COMPUTE WS-SOBRA * 0,14 = WS-TAXAAUX    
-          
+           COMPUTE WS-SOBRA = WS-SALARIOAUX - 3500,01
+           COMPUTE WS-TAXAAUX = WS-SOBRA * 0,14
+
            ADD WS-TAXAAUX                    TO WS-TAXATOTAL
-                   
+
            PERFORM 2500-GRAVAR
            .
 
-       2450-FAIXA5
+       2450-FAIXA5.
+           ADD WS-FIXA1                      TO WS-TAXATOTAL
+           ADD WS-FIXA2                      TO WS-TAXATOTAL
+           ADD WS-FIXA3                      TO WS-TAXATOTAL
+           ADD WS-FIXA4                      TO WS-TAXATOTAL
+
+           PERFORM 2500-GRAVAR
            .
 
        2500-GRAVAR.
-      *    MOVIMENTACAO UNITARIA PARA BOOK DE GRAVACAO
-      *     MOVE DCLFUNC-CPF                  TO BK034602-CPF
-      *     MOVE DCLFUNC-NOME-TEXT            TO BK034602-NOME
-      *     MOVE DCLFUNC-TELEFONE             TO BK034602-TELEFONE
-      *     MOVE DCLFUNC-SALARIOBASE          TO BK034602-SALARIOBASE
-      *     MOVE WS-TAXATOTAL                 TO BK034602-INSS        
-      *     MOVE DCLFUNC-IRRF                 TO BK034602-IRRF        
-      *     MOVE DCLFUNC-DEPENDENTE           TO BK034602-DEPENDENTE 
+           MOVE WS-TAXATOTAL                 TO BK034610-INSS
 
            WRITE REG-FILE4601 FROM BK034610
 
@@ -245,6 +268,11 @@
                DISPLAY FS-FILE4601
                GO TO 9000-ERRO
            END-IF
+
+           MOVE ZERO                         TO WS-SOBRA
+           MOVE ZERO                         TO WS-TAXAAUX
+           MOVE ZERO                         TO WS-TAXATOTAL
+           MOVE ZERO                         TO WS-SALARIOAUX
            .
 
        3000-TERMINO.
@@ -277,14 +305,14 @@
            DISPLAY 'TOTAL DE DESCARTADOS..............' WS-CTDESC-F
            DISPLAY '--------------------------------------------------'
            DISPLAY '=================================================='
-           DISPLAY '             TERMINO NORMAL EXERELAT              '
+           DISPLAY '             TERMINO NORMAL T5034602              '
            DISPLAY '=================================================='
            .
 
        9000-ERRO.
            DISPLAY '9000-ERRO'
            DISPLAY '--------------------------------------------------'
-           DISPLAY '   XXX      TERMINO ANORMAL DO EXERELAT     XXX   '
+           DISPLAY '   XXX      TERMINO ANORMAL DO T5034602     XXX   '
            DISPLAY '--------------------------------------------------'
            STOP RUN
            .

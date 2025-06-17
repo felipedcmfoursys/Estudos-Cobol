@@ -1,0 +1,245 @@
+      *--------------------------------------------------------*
+       IDENTIFICATION                      DIVISION.
+      *-------------------------------------------------------------*
+       PROGRAM-ID.                         T5034603.
+       AUTHOR.                             FELIPE.
+      *
+      *--------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *--------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+      *
+       INPUT-OUTPUT                        SECTION.
+      *
+       FILE-CONTROL.
+           SELECT FILE4601 ASSIGN TO UT-S-FILE4601
+           FILE STATUS IS FS-FILE4601
+           .
+
+           SELECT FILE4602 ASSIGN TO UT-S-FILE4602
+           FILE STATUS IS FS-FILE4602
+           .
+      *--------------------------------------------------------------*
+       DATA                                DIVISION.
+      *--------------------------------------------------------------*
+       FILE                                SECTION.
+      *--------------------------------------------------------------*
+       FD  FILE4601
+           LABEL RECORD OMITTED
+           RECORDING MODE IS F
+           RECORD CONTAINS 67 CHARACTERS
+           DATA RECORD IS REG-FILE4601
+           .
+       01  REG-FILE4601                     PIC X(67).
+
+       FD  FILE4602
+           LABEL RECORD OMITTED
+           RECORDING MODE IS F
+           RECORD CONTAINS 67 CHARACTERS
+           DATA RECORD IS REG-FILE4602
+           .
+       01  REG-FILE4602                     PIC X(67).
+      *--------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *--------------------------------------------------------------*
+
+           COPY BK034610.
+           COPY BK034611.
+
+       01  WS-CONTADORES-COMP.
+           05  WS-CTLIDO                   PIC 9(05) COMP.
+           05  WS-CTREG                    PIC 9(05) COMP.
+           05  WS-CTDESC                   PIC 9(05) COMP.
+
+       01  WS-CONTADORES-COM-F.
+           05  WS-CTLIDO-F                 PIC ZZZ9.
+           05  WS-CTREG-F                  PIC ZZZ9.
+           05  WS-CTDESC-F                 PIC ZZZ9.
+
+       77  WS-BASECALC                     PIC S9(08)V99 COMP-3.
+       77  WS-DEPENDENTETOTAL              PIC 9(04)V99.
+
+       01  INDICADORES.
+           05 IINSS                        PIC S9(04) COMP.
+           05 IIRRF                        PIC S9(04) COMP.
+           05 IDEPENDENTE                  PIC S9(04) COMP.
+      *--------------------------------------------------------------*
+      * VARIAVEIS DE FILE STATUS                                     *
+      *--------------------------------------------------------------*
+       01  FS-FILE4601                      PIC X(02).
+           88 SUCESSO-1                            VALUE '00'.
+           88 FIM-ARQ-1                            VALUE '10'.
+
+       01  FS-FILE4602                      PIC X(02).
+           88 SUCESSO-2                            VALUE '00'.
+           88 FIM-ARQ-2                            VALUE '10'.
+      *--------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *--------------------------------------------------------------*
+           PERFORM 1000-INICIALIZAR
+           PERFORM 2000-PROCESSAR
+               UNTIL FIM-ARQ-1
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+
+       1000-INICIALIZAR.
+           INITIALIZE WS-CONTADORES-COMP
+
+           MOVE 0                          TO WS-CTLIDO
+                                              WS-CTREG
+                                              WS-CTDESC
+
+           OPEN INPUT FILE4601
+
+           IF NOT SUCESSO-1
+               DISPLAY "ERRO ABERTURA ARQUIVO ENTRADA"
+               DISPLAY FS-FILE4601
+               GO TO 9000-ERRO
+           END-IF
+
+           OPEN OUTPUT FILE4602
+
+           IF NOT SUCESSO-2
+               DISPLAY "ERRO ABERTURA ARQUIVO SAIDA"
+               DISPLAY FS-FILE4601
+               GO TO 9000-ERRO
+           END-IF
+
+           PERFORM 1500-LER-ARQUIVO
+           .
+
+       1500-LER-ARQUIVO.
+           READ FILE4601 INTO BK034610
+
+           IF SUCESSO-1
+              ADD 1                        TO WS-CTLIDO
+           ELSE
+               IF NOT FIM-ARQ-1
+               DISPLAY 'ERRO DE LEITURA ARQUIVO'
+               DISPLAY FS-FILE4601
+               GO TO 9000-ERRO
+               END-IF
+           END-IF
+           .
+
+       2000-PROCESSAR.
+           COMPUTE WS-DEPENDENTETOTAL = BK034610-DEPENDENTE * 189,59
+
+           COMPUTE WS-BASECALC = BK034610-SALARIOBASE - BK034610-INSS -
+                                                     WS-DEPENDENTETOTAL
+
+           IF WS-BASECALC < 2112,00
+               PERFORM 2100-FAIXA1
+           ELSE
+               IF WS-BASECALC > 2112,01 AND WS-BASECALC < 2826,65
+                   PERFORM 2200-FAIXA2
+               ELSE
+                   IF WS-BASECALC > 2826,66 AND WS-BASECALC < 3751,05
+                       PERFORM 2300-FAIXA3
+                   ELSE
+                    IF WS-BASECALC > 3751,05 AND WS-BASECALC < 4664,68
+                        PERFORM 2400-FAIXA4
+                       ELSE
+                           PERFORM 2450-FAIXA5
+                       END-IF
+                   END-IF
+               END-IF
+           END-IF
+
+           MOVE 0 TO WS-BASECALC
+           MOVE 0 TO WS-DEPENDENTETOTAL
+           MOVE 0 TO BK034611-IRRF
+
+           PERFORM 1500-LER-ARQUIVO
+           .
+
+       2100-FAIXA1.
+
+           PERFORM 2500-GRAVAR
+           .
+
+       2200-FAIXA2.
+           COMPUTE BK034611-IRRF = (WS-BASECALC * 0,075) - 158,40
+
+           PERFORM 2500-GRAVAR
+           .
+
+       2300-FAIXA3.
+           COMPUTE BK034611-IRRF = (WS-BASECALC * 0,15) - 370,40
+
+           PERFORM 2500-GRAVAR
+           .
+
+       2400-FAIXA4.
+           COMPUTE BK034611-IRRF = (WS-BASECALC * 0,225) - 651,73
+
+           PERFORM 2500-GRAVAR
+           .
+
+       2450-FAIXA5.
+           COMPUTE BK034611-IRRF = (WS-BASECALC * 0,275) - 884,96
+
+           PERFORM 2500-GRAVAR
+           .
+
+       2500-GRAVAR.
+           MOVE BK034610-CPF                 TO BK034611-CPF
+           MOVE BK034610-NOME                TO BK034611-NOME
+           MOVE BK034610-TELEFONE            TO BK034611-TELEFONE
+           MOVE BK034610-SALARIOBASE         TO BK034611-SALARIOBASE
+           MOVE BK034610-INSS                TO BK034611-INSS
+           MOVE BK034610-DEPENDENTE          TO BK034611-DEPENDENTE
+
+           WRITE REG-FILE4602 FROM BK034611
+
+           IF SUCESSO-2
+               ADD 1 TO WS-CTREG
+           ELSE
+               DISPLAY 'ERRO GRAVACAO DO ARQUIVO'
+               DISPLAY FS-FILE4602
+               GO TO 9000-ERRO
+           END-IF
+           .
+
+       3000-TERMINO.
+           MOVE WS-CTLIDO                    TO WS-CTLIDO-F
+           MOVE WS-CTREG                     TO WS-CTREG-F
+           MOVE WS-CTDESC                    TO WS-CTDESC-F
+
+           CLOSE FILE4601
+           IF NOT SUCESSO-1
+               DISPLAY "ERRO FECHAMENTO ARQ-1"
+               DISPLAY FS-FILE4601
+               GO TO 9000-ERRO
+           END-IF
+
+           CLOSE FILE4602
+           IF NOT SUCESSO-2
+               DISPLAY "ERRO FECHAMENTO ARQ-2"
+               DISPLAY FS-FILE4602
+               GO TO 9000-ERRO
+           END-IF
+
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '                 WEYLAND-YUTANI                   '
+           DISPLAY '--------------------------------------------------'
+           DISPLAY 'TOTAL DE LIDOS....................' WS-CTLIDO-F
+           DISPLAY 'TOTAL DE REGISTRADOS..............' WS-CTREG-F
+           DISPLAY 'TOTAL DE DESCARTADOS..............' WS-CTDESC-F
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '=================================================='
+           DISPLAY '             TERMINO NORMAL T5034603              '
+           DISPLAY '=================================================='
+           .
+
+       9000-ERRO.
+           DISPLAY '9000-ERRO'
+           DISPLAY '--------------------------------------------------'
+           DISPLAY '   XXX      TERMINO ANORMAL DO T5034603     XXX   '
+           DISPLAY '--------------------------------------------------'
+           STOP RUN
+           .
+
