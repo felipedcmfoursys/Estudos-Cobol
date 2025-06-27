@@ -1,0 +1,48 @@
+EASY001
+-------
+objetivo: ler e exibir (sysout) o conteúdo de um arquivo de entrada.
+
+detalhe do arquivo de entrada
+-----------------------------
+dsn: fs.fsys998.vendas
+filename: vendas
+layout do registro:
+codprod x(5)
+qtdevenda 9(05)v99 comp-3
+valorunitario 9(07)v99 comp-3
+datavenda 9(08)
+
+-----------------------------
+layout de saída
+-----------------------------
+codigo.........: xxxxx (codprod)
+quantidade.....: zz.zz9,99 (qtdevenda)
+valor unitario.: z.zzz.zz9,99 (valorunitario)
+valor total....: zzz.zzz.zzz.zz9,99 (qtdevenda * valorunitario)
+
+escreva um programa em easytrieve que atenda a essa especificação.
+
+Programa Easytrieve:
+
+FILE VENDAS FB(22)                                            
+  CODPROD     01 05 A                                         
+  QTDEVENDA   06 04 P 2 MASK ('ZZ.ZZ9,99' BWZ)                
+  VALORUNIT   10 05 P 2 MASK ('Z.ZZZ.ZZ9,99' BWZ)             
+  DATAVENDA   15 08 N                                         
+                                                              
+  VALORTOTAL   W 9(13)V99 MASK ('ZZZ.ZZZ.ZZZ.ZZ9,99' BWZ)     
+  TOTALGERAL   G 9(15)V99 MASK ('ZZZ.ZZZ.ZZZ.ZZZ.ZZ9,99' BWZ) 
+
+JOB INPUT VENDAS                                                    
+    VALORTOTAL = QTDEVENDA * VALORUNIT                              
+    TOTALGERAL = TOTALGERAL + VALORTOTAL                            
+                                                                    
+    DISPLAY 'CODIGO.........: ' CODPROD                             
+    DISPLAY 'QUANTIDADE.....: ' QTDEVENDA                           
+    DISPLAY 'VALOR UNITARIO.: ' VALORUNIT                           
+    DISPLAY 'VALOR TOTAL....: ' VALORTOTAL                          
+    DISPLAY 'DATA DA VENDA..: ' DATAVENDA                           
+    DISPLAY '------------------------------------------'            
+                                                                    
+JOB                                                                 
+    DISPLAY 'TOTAL GERAL DE VENDAS: ' TOTALGERAL                                                                                 

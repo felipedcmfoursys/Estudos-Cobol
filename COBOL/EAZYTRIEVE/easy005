@@ -1,0 +1,35 @@
+EASY005
+-------
+objetivo: ler um arquivo de entrada com o número do financiamento, valor a ser financiado, número de parcelas e taxa de juros. Para cada financiamento, calcular o valor das parcelar usando sistema SAC.
+
+
+detalhe do arquivo de entrada
+-----------------------------
+dsn: fs.fsys998.financ
+filename: financ
+layout do registro:
+numfin  9(5)
+valor   9(07)v99
+numparc 9(02)
+taxa    9(1)v9(4)
+
+
+-----------------------------------
+layout da simulção do financiamento
+-----------------------------------
+numero financiamento...: 99999
+valor financiado.......: z.zzz.zz9,99
+taxa de juros mensal...: 9,9999
+qtde. parcelas.........: 99
+
+Parcelas
+99 - z.zzz.zz9,99
+99 - z.zzz.zz9,99
+...
+99 - z.zzz.zz9,99
+
+veja o cálculo em:
+https://pt.wikipedia.org/wiki/Sistema_de_amortiza%C3%A7%C3%A3o_constante
+
+
+

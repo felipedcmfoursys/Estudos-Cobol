@@ -157,6 +157,7 @@
            .
 
        2100-FAIXA1.
+           COMPUTE BK034611-IRRF = (WS-BASECALC * 0,075) - 158,40
 
            PERFORM 2500-GRAVAR
            .
